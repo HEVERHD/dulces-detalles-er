@@ -229,9 +229,10 @@ export default function AdminProductsPage() {
         if (!ok) return;
 
         try {
-            const res = await fetch(`/api/products/${productId}`, {
+            const res = await fetch(`/api/products?id=${productId}`, {
                 method: "DELETE",
             });
+
             if (!res.ok) {
                 throw new Error("Error al eliminar producto");
             }
@@ -276,10 +277,10 @@ export default function AdminProductsPage() {
             setIsSaving(true);
 
             if (editingProductId) {
-                const res = await fetch(`/api/products/${editingProductId}`, {
+                const res = await fetch(`/api/products`, {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload),
+                    body: JSON.stringify(payload), // payload ya lleva id
                 });
 
                 if (!res.ok) {
