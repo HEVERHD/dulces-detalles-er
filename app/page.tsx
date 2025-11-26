@@ -15,7 +15,7 @@ const CATEGORIES = [
 ];
 
 // Números en formato internacional para WhatsApp (sin +, con 57)
-const WHATSAPP_OUTLET_BOSQUE = "3504737628";
+const WHATSAPP_OUTLET_BOSQUE = "3504737638";
 const WHATSAPP_SUPERCENTRO = "3202304977";
 
 type Branch = "outlet" | "supercentro";
