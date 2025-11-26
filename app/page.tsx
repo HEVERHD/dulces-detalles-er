@@ -15,8 +15,8 @@ const CATEGORIES = [
 ];
 
 // Números en formato internacional para WhatsApp (sin +, con 57)
-const WHATSAPP_OUTLET_BOSQUE = "3006176641";
-const WHATSAPP_SUPERCENTRO = "573202304977";
+const WHATSAPP_OUTLET_BOSQUE = "3504737628";
+const WHATSAPP_SUPERCENTRO = "3202304977";
 
 type Branch = "outlet" | "supercentro";
 const BRANCH_STORAGE_KEY = "dd-default-branch";
@@ -225,7 +225,7 @@ export default function HomePage() {
               {/* Tarjeta con imagen */}
               <div className="overflow-hidden rounded-3xl border border-white/70 bg-white/70 shadow-2xl backdrop-blur-sm">
                 <img
-                  src="/images/products/navidad.jpg" // 👉 pon aquí tu foto navideña
+                  src="/images/products/navidad.png" // 👉 pon aquí tu foto navideña
                   alt="Arreglo navideño de Dulces Detalles ER"
                   className="h-60 w-full object-cover md:h-72"
                 />
