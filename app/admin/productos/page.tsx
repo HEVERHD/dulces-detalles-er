@@ -396,9 +396,12 @@ export default function AdminProductsPage() {
                 <div className="flex gap-2 text-sm">
                     <select
                         value={categoryFilter}
-                        onChange={(e) => setCategoryFilter(e.target.value)}
+                        onChange={(e) =>
+                            setCategoryFilter(e.target.value as ProductCategory | "all")
+                        }
                         className="rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-pink-300 focus:border-pink-400"
                     >
+
                         <option value="all">Todas las categorías</option>
                         <option value="cumple">Cumpleaños</option>
                         <option value="aniversario">Aniversarios</option>
