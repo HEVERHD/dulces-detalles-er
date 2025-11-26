@@ -1,71 +1,88 @@
 // app/producto/[slug]/page.tsx
 "use client";
 
-import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import type { Product } from "@/lib/products";
 
+// Números en formato internacional para WhatsApp (sin +, con 57)
 const WHATSAPP_OUTLET_BOSQUE = "573504737628";
+const WHATSAPP_SUPERCENTRO = "573202304977";
 
-function buildWhatsAppUrl(productName: string) {
-    const base = `https://wa.me/${WHATSAPP_OUTLET_BOSQUE}`;
-    const text = `Hola, vengo desde la web de *Dulces Detalles ER* 💖
-Me interesa el detalle: *${productName}*.
-¿Me pueden dar más información?`;
-    return `${base}?text=${encodeURIComponent(text)}`;
-}
+type Branch = "outlet" | "supercentro";
+const BRANCH_STORAGE_KEY = "dd-default-branch";
 
-type ProductFromApi = {
-    id: string;
-    slug: string;
-    name: string;
-    shortDescription: string;
-    description: string;
-    price: number;
-    tag?: string | null;
-    image: string;
-    isFeatured: boolean;
-    isActive: boolean;
+type ProductDetail = Product & {
+    category?: {
+        id?: number;
+        name?: string;
+        slug?: string;
+    };
 };
 
+function buildWhatsAppUrl(phone: string, productName?: string) {
+    const text = `Hola, vengo desde la web de *Dulces Detalles ER* 💖 Me interesa el detalle: *${productName ?? ""
+        }*. ¿Podrían darme más información?`;
+    return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+}
+
+function getBranchLabel(branch: Branch) {
+    return branch === "outlet"
+        ? "Outlet del Bosque"
+        : "Supercentro Los Ejecutivos";
+}
+
 export default function ProductPage() {
-    const params = useParams<{ slug: string | string[] }>();
+    const params = useParams();
+    const router = useRouter();
+    const slug = params?.slug as string;
 
-    // normalizamos el slug
-    const slug = typeof params.slug === "string" ? params.slug : params.slug?.[0];
+    const [product, setProduct] = useState<ProductDetail | null>(null);
+    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
 
-    const [product, setProduct] = useState<ProductFromApi | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [errorMsg, setErrorMsg] = useState<string | null>(null);
+    const [defaultBranch, setDefaultBranch] = useState<Branch>("outlet");
+
+    const handleWhatsAppClick = () => {
+        if (typeof window === "undefined" || !product) return;
+
+        const phone =
+            defaultBranch === "supercentro"
+                ? WHATSAPP_SUPERCENTRO
+                : WHATSAPP_OUTLET_BOSQUE;
+
+        window.open(buildWhatsAppUrl(phone, product.name), "_blank");
+    };
+
+    // Leer sucursal guardada
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        const stored = window.localStorage.getItem(BRANCH_STORAGE_KEY);
+        if (stored === "outlet" || stored === "supercentro") {
+            setDefaultBranch(stored);
+        }
+    }, []);
 
     useEffect(() => {
         if (!slug) return;
 
-        console.log("🟣 slug en ProductPage:", slug);
-
         const fetchProduct = async () => {
             try {
                 setIsLoading(true);
-                setErrorMsg(null);
+                setError(null);
 
-                // 👇 AHORA USAMOS EL SEGMENTO /by-slug/{slug}
-                const res = await fetch(`/api/products/by-slug/${encodeURIComponent(slug)}`);
+                // IMPORTANTE: usamos query ?slug=
+                const res = await fetch(`/api/products/by-slug?slug=${encodeURIComponent(slug)}`);
 
                 if (!res.ok) {
-                    const data = await res.json().catch(() => ({}));
-                    console.error("❌ Error fetch detalle:", res.status, data);
-                    if (res.status === 404) {
-                        setProduct(null);
-                        setErrorMsg("No encontramos este detalle. 😢");
-                        return;
-                    }
-                    throw new Error(data?.error || "Error cargando el detalle");
+                    throw new Error(`No se pudo cargar el producto (${res.status})`);
                 }
 
-                const data = (await res.json()) as ProductFromApi;
+                const data = await res.json();
                 setProduct(data);
             } catch (err: any) {
-                console.error("🔥 Error cargando producto:", err);
-                setErrorMsg("Ocurrió un error cargando este detalle.");
+                console.error("❌ Error cargando producto:", err);
+                setError(err?.message ?? "Error cargando producto");
             } finally {
                 setIsLoading(false);
             }
@@ -74,113 +91,185 @@ export default function ProductPage() {
         fetchProduct();
     }, [slug]);
 
-    // Volver al inicio
-    const backLink = (
-        <a
-            href="/"
-            className="inline-flex items-center text-sm text-slate-500 hover:text-pink-600"
-        >
-            ← Volver al inicio
-        </a>
-    );
+    const formatPrice = (value: number) =>
+        value.toLocaleString("es-CO", {
+            style: "currency",
+            currency: "COP",
+            maximumFractionDigits: 0,
+        });
 
     if (isLoading) {
         return (
-            <div className="py-10 space-y-4">
-                {backLink}
-                <p className="mt-6 text-slate-500 text-sm">Cargando detalle...</p>
+            <div className="min-h-[60vh] flex items-center justify-center">
+                <p className="text-sm text-slate-500">Cargando detalle...</p>
             </div>
         );
     }
 
-    if (errorMsg || !product) {
+    if (error || !product) {
         return (
-            <div className="py-10 space-y-4">
-                {backLink}
-                <p className="mt-6 text-pink-600 font-semibold">
-                    {errorMsg ?? "No encontramos este detalle. 😢"}
+            <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3 px-4 text-center">
+                <p className="text-sm text-slate-500">
+                    {error ?? "No encontramos este detalle."}
                 </p>
+                <button
+                    onClick={() => router.push("/")}
+                    className="mt-1 text-xs font-semibold text-pink-600 underline"
+                >
+                    Volver al inicio
+                </button>
             </div>
         );
     }
-
-    const whatsappUrl = buildWhatsAppUrl(product.name);
-    const priceFormatted = product.price.toLocaleString("es-CO", {
-        style: "currency",
-        currency: "COP",
-        maximumFractionDigits: 0,
-    });
 
     return (
-        <div className="py-10 space-y-10">
-            {backLink}
+        <div className="pb-24 space-y-6">
+            {/* Migas / volver */}
+            <div className="mt-2 px-4 flex items-center justify-between gap-2">
+                <button
+                    onClick={() => router.back()}
+                    className="text-[11px] md:text-xs text-slate-500 hover:text-slate-700"
+                >
+                    ← Volver
+                </button>
 
-            <div className="grid md:grid-cols-[2fr,1fr] gap-10 items-start">
-                {/* Información principal */}
-                <div className="space-y-5">
-                    <img
-                        src={product.image}
-                        alt={product.name}
-                        className="w-full rounded-2xl shadow-lg object-cover max-h-[420px]"
-                    />
-
-                    <span className="inline-flex items-center rounded-full bg-pink-50 text-pink-600 text-xs font-semibold px-3 py-1">
-                        Detalle especial
+                <p className="text-[11px] md:text-xs text-slate-400">
+                    Estás escribiendo a:{" "}
+                    <span className="font-semibold text-pink-600">
+                        {getBranchLabel(defaultBranch)}
                     </span>
+                </p>
+            </div>
 
-                    <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900">
-                        {product.name}
-                    </h1>
+            {/* HERO DEL DETALLE */}
+            <section className="mx-4 rounded-3xl bg-gradient-to-b from-pink-50 via-pink-100 to-rose-50 overflow-hidden shadow-sm">
+                <div className="relative">
+                    {/* Decoraciones */}
+                    <div className="pointer-events-none absolute inset-0">
+                        <div className="absolute -top-10 -right-6 w-32 h-32 bg-pink-200/60 rounded-full blur-3xl" />
+                        <div className="absolute -bottom-12 -left-10 w-40 h-40 bg-rose-200/60 rounded-full blur-3xl" />
+                    </div>
 
-                    <p className="text-slate-600 text-sm md:text-base leading-relaxed">
-                        {product.description}
-                    </p>
+                    {/* Imagen */}
+                    <div className="relative">
+                        <img
+                            src={product.image}
+                            alt={product.name}
+                            className="w-full h-72 object-cover md:h-80"
+                        />
+                        {/* Badge superior */}
+                        <div className="absolute top-3 left-3 inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-[11px] font-semibold text-pink-700 shadow-sm">
+                            🎁 Detalle personalizado
+                        </div>
 
-                    <ul className="mt-4 text-sm text-slate-600 space-y-1">
-                        <li>✅ Personalizable con nombre y tarjeta</li>
-                        <li>✅ Entrega a domicilio en Cartagena</li>
-                        <li>✅ También puedes recoger en nuestros puntos físicos</li>
-                    </ul>
-                </div>
+                        {product.tag && (
+                            <div className="absolute top-3 right-3 inline-flex items-center gap-2 rounded-full bg-pink-600 text-white text-[11px] px-3 py-1 shadow-md">
+                                <span>{product.tag}</span>
+                            </div>
+                        )}
+                    </div>
 
-                {/* Lado derecho: Card */}
-                <aside className="bg-white/90 border border-pink-100 rounded-2xl p-6 shadow-lg space-y-4">
-                    <div className="space-y-1">
-                        <p className="text-xs font-semibold text-pink-600 uppercase tracking-wide">
-                            Detalle
-                        </p>
-                        <p className="text-lg font-semibold text-slate-900">
+                    {/* Info principal */}
+                    <div className="relative px-4 pt-4 pb-5 space-y-3 bg-gradient-to-t from-white/95 via-white/90 to-white/60 backdrop-blur-sm">
+                        {product.category && (
+                            <p className="text-[11px] text-pink-600 font-semibold">
+                                {product.category.name ?? "Detalle especial"}
+                            </p>
+                        )}
+
+                        <h1 className="text-xl md:text-2xl font-extrabold text-slate-900 leading-snug">
                             {product.name}
-                        </p>
-                        <p className="text-xs text-slate-500">
+                        </h1>
+
+                        <p className="text-xs md:text-sm text-slate-600">
                             {product.shortDescription}
                         </p>
+
+                        <div className="flex items-end justify-between mt-2">
+                            <div>
+                                <p className="text-[11px] text-slate-400">Desde</p>
+                                <p className="text-2xl font-extrabold text-pink-600">
+                                    {formatPrice(product.price)}
+                                </p>
+                                <p className="text-[11px] text-slate-400 mt-0.5">
+                                    Precio puede variar según personalización ✨
+                                </p>
+                            </div>
+
+                            <button
+                                onClick={handleWhatsAppClick}
+                                className="inline-flex items-center gap-2 rounded-full bg-pink-500 hover:bg-pink-600 text-white font-semibold px-4 py-2 text-xs shadow-lg shadow-pink-300/60"
+                            >
+                                💬 Pedir este detalle
+                            </button>
+                        </div>
                     </div>
+                </div>
+            </section>
 
-                    <div>
-                        <p className="text-xs text-slate-500 mb-1">Precio desde:</p>
-                        <p className="text-3xl font-extrabold text-pink-600">
-                            {priceFormatted}
-                        </p>
-                        <p className="text-[11px] text-slate-400">
-                            *El precio puede variar según personalización.
-                        </p>
-                    </div>
-
-                    <a
-                        href={whatsappUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block text-center rounded-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 text-sm shadow-lg"
-                    >
-                        💬 Pedir este detalle por WhatsApp
-                    </a>
-
-                    <p className="text-[11px] text-slate-400 text-center">
-                        Te atenderemos por WhatsApp.
+            {/* DESCRIPCIÓN / DETALLES */}
+            <section className="px-4 space-y-4">
+                <div>
+                    <h2 className="text-sm font-semibold text-slate-900 mb-1">
+                        ¿Qué incluye este detalle?
+                    </h2>
+                    <p className="text-xs md:text-sm text-slate-600 whitespace-pre-line">
+                        {product.description}
                     </p>
-                </aside>
-            </div>
+                </div>
+
+                <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm space-y-2">
+                    <h3 className="text-sm font-semibold text-slate-900">
+                        Información importante 📌
+                    </h3>
+                    <ul className="text-[11px] md:text-xs text-slate-600 space-y-1.5 list-disc list-inside">
+                        <li>Las fotos son referencia, podemos ajustar colores y dulces según tu gusto.</li>
+                        <li>Te confirmamos disponibilidad de peluches, globos y chocolates al momento del pedido.</li>
+                        <li>Hacemos entregas a domicilio en Cartagena o puedes recoger en nuestras sucursales.</li>
+                    </ul>
+                </div>
+            </section>
+
+            {/* SUCURSALES RESUMEN */}
+            <section className="px-4 space-y-3">
+                <h2 className="text-sm font-semibold text-slate-900">
+                    Pide este detalle en nuestras sucursales
+                </h2>
+                <div className="grid gap-3 md:grid-cols-2">
+                    <article className="bg-white/90 border border-slate-100 rounded-2xl p-3 shadow-sm">
+                        <p className="text-xs font-semibold text-slate-900">
+                            Outlet del Bosque
+                        </p>
+                        <p className="text-[11px] text-slate-500">
+                            Centro Comercial Outlet del Bosque, frente a la Olímpica.
+                        </p>
+                        <p className="text-[11px] text-slate-700 mt-1">
+                            📲 +57 350 473 7628
+                        </p>
+                    </article>
+
+                    <article className="bg-white/90 border border-slate-100 rounded-2xl p-3 shadow-sm">
+                        <p className="text-xs font-semibold text-slate-900">
+                            Supercentro Los Ejecutivos
+                        </p>
+                        <p className="text-[11px] text-slate-500">
+                            Al lado del Banco BBVA.
+                        </p>
+                        <p className="text-[11px] text-slate-700 mt-1">
+                            📲 +57 320 230 4977
+                        </p>
+                    </article>
+                </div>
+            </section>
+
+            {/* BOTÓN FLOTANTE WHATSAPP */}
+            <button
+                onClick={handleWhatsAppClick}
+                className="fixed bottom-6 right-6 rounded-full bg-green-500 hover:bg-green-600 text-white shadow-xl w-14 h-14 flex items-center justify-center text-2xl"
+                aria-label="Abrir WhatsApp para este detalle"
+            >
+                💬
+            </button>
         </div>
     );
 }
