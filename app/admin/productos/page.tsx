@@ -10,7 +10,7 @@ import {
 } from "react";
 import type { Product, ProductCategory } from "@/lib/products";
 
-const CATEGORY_LABELS: Record<string, string> = {
+const CATEGORY_LABELS: Record<ProductCategory, string> = {
     cumple: "Cumpleaños",
     aniversario: "Aniversarios",
     declaracion: "Declaraciones",
@@ -18,11 +18,12 @@ const CATEGORY_LABELS: Record<string, string> = {
     dietetico: "Sin azúcar / especiales",
 };
 
+
 type NewProductForm = {
     name: string;
     slug: string;
     price: string;
-    category: string; // slug: "cumple", "aniversario", etc.
+    category: ProductCategory | ""; // 👈 en vez de string a secas
     tag: string;
     shortDescription: string;
     description: string;
@@ -205,7 +206,7 @@ export default function AdminProductsPage() {
             name: product.name,
             slug: product.slug,
             price: String(product.price),
-            category: product.category?.slug ?? "",
+            category: product.category ?? "",
             tag: product.tag ?? "",
             shortDescription: product.shortDescription,
             description: product.description,
@@ -215,9 +216,10 @@ export default function AdminProductsPage() {
         });
         setEditingProductId(product.id);
         setErrors({});
-        setSlugTouched(true); // para no sobre-escribir el slug cuando cambien el nombre
+        setSlugTouched(true);
         setIsModalOpen(true);
     };
+
 
     const handleDelete = async (productId: string) => {
         const product = products.find((p) => p.id === productId);
@@ -514,8 +516,9 @@ export default function AdminProductsPage() {
 
                                 {/* Categoría */}
                                 <div className="text-xs text-slate-600">
-                                    {CATEGORY_LABELS[p.category?.slug] || p.category?.name || "Sin categoría"}
+                                    {CATEGORY_LABELS[p.category] ?? "Sin categoría"}
                                 </div>
+
 
                                 {/* Tag */}
                                 <div>
