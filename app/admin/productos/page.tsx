@@ -8,7 +8,7 @@ import {
     ChangeEvent,
     FormEvent,
 } from "react";
-import type { Product } from "@/lib/products";
+import type { Product, ProductCategory } from "@/lib/products";
 
 const CATEGORY_LABELS: Record<string, string> = {
     cumple: "Cumpleaños",
@@ -50,7 +50,8 @@ export default function AdminProductsPage() {
 
     // 🔹 filtros
     const [search, setSearch] = useState("");
-    const [categoryFilter, setCategoryFilter] = useState<string>("all");
+    const [categoryFilter, setCategoryFilter] = useState<ProductCategory | "all">("all");
+
 
     // 🔹 modal
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -116,8 +117,7 @@ export default function AdminProductsPage() {
                 p.shortDescription.toLowerCase().includes(search.toLowerCase());
 
             const matchCategory =
-                categoryFilter === "all" || p.category?.slug === categoryFilter;
-
+                categoryFilter === "all" || p.category === categoryFilter;
 
             return matchSearch && matchCategory;
         });
