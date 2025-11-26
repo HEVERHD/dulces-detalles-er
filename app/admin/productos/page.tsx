@@ -470,8 +470,12 @@ export default function AdminProductsPage() {
                         filteredProducts.map((p) => (
                             <div
                                 key={p.id}
-                                className="grid md:grid-cols-[80px,2fr,1fr,1fr,100px,110px] gap-3 px-4 py-3 items-center hover:bg-pink-50/40 transition-colors"
+                                className="grid md:grid-cols-[80px,2.2fr,1fr,1fr,0.8fr,0.9fr] 
+             gap-3 px-4 py-4 
+             items-start md:items-center
+             hover:bg-pink-50/40 transition-colors"
                             >
+
                                 {/* Imagen */}
                                 <div className="w-16 h-16 rounded-lg overflow-hidden bg-slate-100">
                                     <img
