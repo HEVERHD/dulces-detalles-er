@@ -32,22 +32,26 @@ function getBranchLabel(branch: Branch) {
 }
 
 export default function HomePage() {
-  // 🔄 Productos
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [errorProducts, setErrorProducts] = useState<string | null>(null);
 
-  // 🏬 Sucursal por defecto
-  const [defaultBranch, setDefaultBranch] = useState<Branch>("outlet");
+  // Paginación
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const LIMIT = 6;
 
   // 🧺 Carrito
   const { addItem, totalItems } = useCart();
   const [animateCart, setAnimateCart] = useState(false);
 
-  // 🔍 Buscador
+  // Sucursal default
+  const [defaultBranch, setDefaultBranch] = useState<Branch>("outlet");
+
+  // Buscador
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Animación carrito cuando cambia la cantidad
+  // ✔ Animación carrito
   useEffect(() => {
     if (totalItems > 0) {
       setAnimateCart(true);
@@ -56,28 +60,29 @@ export default function HomePage() {
     }
   }, [totalItems]);
 
+  // ✔ Filtro buscador
   const filteredProducts = products.filter((product) => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return true;
 
-    const name = product.name.toLowerCase();
-    const tag = (product.tag ?? "").toLowerCase();
-    const shortDesc = (product.shortDescription ?? "").toLowerCase();
-
-    return name.includes(q) || tag.includes(q) || shortDesc.includes(q);
+    return (
+      product.name.toLowerCase().includes(q) ||
+      (product.tag ?? "").toLowerCase().includes(q) ||
+      (product.shortDescription ?? "").toLowerCase().includes(q)
+    );
   });
 
+  // ✔ Acción WhatsApp
   const handleWhatsAppClick = (branch?: Branch, productName?: string) => {
     if (typeof window === "undefined") return;
 
     const effectiveBranch: Branch = branch ?? defaultBranch;
-    const phone =
-      effectiveBranch === "supercentro" ? WHATSAPP_SUPERCENTRO : WHATSAPP_OUTLET_BOSQUE;
+    const phone = effectiveBranch === "supercentro" ? WHATSAPP_SUPERCENTRO : WHATSAPP_OUTLET_BOSQUE;
 
     window.open(buildWhatsAppUrl(phone, productName), "_blank");
   };
 
-  // Leer sucursal guardada
+  // ✔ Leer sucursal del storage
   useEffect(() => {
     if (typeof window === "undefined") return;
     const stored = window.localStorage.getItem(BRANCH_STORAGE_KEY);
@@ -86,36 +91,58 @@ export default function HomePage() {
     }
   }, []);
 
-  // Guardar sucursal al cambiar
+  // ✔ Guardar sucursal
   useEffect(() => {
     if (typeof window === "undefined") return;
     window.localStorage.setItem(BRANCH_STORAGE_KEY, defaultBranch);
   }, [defaultBranch]);
 
-  // Cargar productos
+  // ✔ Cargar PRIMERA página
   useEffect(() => {
-    const loadProducts = async () => {
+    const loadInitialProducts = async () => {
       try {
         setIsLoadingProducts(true);
         setErrorProducts(null);
 
-        const res = await fetch("/api/products");
-        if (!res.ok) {
-          throw new Error(`Error cargando productos (${res.status})`);
-        }
+        const res = await fetch(`/api/products?page=1&limit=${LIMIT}`);
+        if (!res.ok) throw new Error(`Error cargando productos (${res.status})`);
 
         const data = await res.json();
-        setProducts(data);
+        setProducts(data.products);
+        setTotal(data.total);
+        setPage(1);
       } catch (err: any) {
-        console.error("❌ Error cargando productos en Home:", err);
-        setErrorProducts(err?.message ?? "Error cargando productos");
+        console.error(err);
+        setErrorProducts(err?.message);
       } finally {
         setIsLoadingProducts(false);
       }
     };
 
-    loadProducts();
+    loadInitialProducts();
   }, []);
+
+  const handleLoadMore = async () => {
+    if (isLoadingProducts) return;
+    if (products.length >= total) return;
+
+    try {
+      setIsLoadingProducts(true);
+      const nextPage = page + 1;
+
+      const res = await fetch(`/api/products?page=${nextPage}&limit=${LIMIT}`);
+      if (!res.ok) throw new Error("Error cargando más productos");
+
+      const data = await res.json();
+
+      setProducts((prev) => [...prev, ...data.products]);
+      setPage(nextPage);
+    } catch (err: any) {
+      setErrorProducts(err?.message);
+    } finally {
+      setIsLoadingProducts(false);
+    }
+  };
 
   const formatPrice = (value: number) =>
     value.toLocaleString("es-CO", {
@@ -284,92 +311,89 @@ export default function HomePage() {
       </section>
 
 
+      {/* LISTADO + BUSCADOR */}
       {/* LISTADO DE PRODUCTOS */}
       <section className="relative">
-        <div className="relative grid gap-5 md:grid-cols-2 md:items-start">
-          <div className="order-2 md:order-1">
-            {/* Buscador en vivo */}
-            <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex-1">
-                <label
-                  htmlFor="search-products"
-                  className="block text-[11px] uppercase tracking-wide text-slate-400 font-semibold mb-1"
-                >
-                  Buscar detalles
-                </label>
-                <div className="relative">
-                  <input
-                    id="search-products"
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Ej: peluche, cumpleaños, aniversario..."
-                    className="w-full rounded-full border border-pink-100 bg-white/80 px-4 py-2 pl-9 text-sm 
-                               focus:outline-none focus:ring-2 focus:ring-pink-200 focus:border-pink-300 
-                               text-slate-700 placeholder:text-slate-300"
-                  />
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-pink-400 text-sm">
-                    🔍
-                  </span>
+        <div className="max-w-6xl mx-auto">
+          {/* Buscador en vivo */}
+          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex-1">
+              <label
+                htmlFor="search-products"
+                className="block text-[11px] uppercase tracking-wide text-slate-400 font-semibold mb-1"
+              >
+                Buscar detalles
+              </label>
+              <div className="relative">
+                <input
+                  id="search-products"
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Ej: peluche, cumpleaños, aniversario..."
+                  className="w-full rounded-full border border-pink-100 bg-white/80 px-4 py-2 pl-9 text-sm 
+                       focus:outline-none focus:ring-2 focus:ring-pink-200 focus:border-pink-300 
+                       text-slate-700 placeholder:text-slate-300"
+                />
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-pink-400 text-sm">
+                  🔍
+                </span>
 
-                  {searchQuery && (
-                    <button
-                      type="button"
-                      onClick={() => setSearchQuery("")}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-slate-400 hover:text-pink-500"
-                    >
-                      Limpiar
-                    </button>
-                  )}
-                </div>
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-slate-400 hover:text-pink-500"
+                  >
+                    Limpiar
+                  </button>
+                )}
               </div>
-
-              <p className="text-[11px] text-slate-400 mt-1 sm:mt-6 text-right">
-                Mostrando{" "}
-                <span className="font-semibold text-pink-600">
-                  {filteredProducts.length}
-                </span>{" "}
-                de {products.length} detalles
-              </p>
             </div>
 
-            {/* Mensaje sin resultados (con productos cargados) */}
-            {!isLoadingProducts &&
-              !errorProducts &&
-              products.length > 0 &&
-              filteredProducts.length === 0 && (
-                <p className="text-sm text-slate-500 text-center py-4">
-                  No encontramos detalles para{" "}
-                  <span className="font-semibold">“{searchQuery}”</span>. Prueba con otra
-                  palabra 😊
-                </p>
-              )}
+            <p className="text-[11px] text-slate-400 mt-1 sm:mt-6 text-right">
+              Mostrando{" "}
+              <span className="font-semibold text-pink-600">
+                {filteredProducts.length}
+              </span>{" "}
+              de {total} detalles
+            </p>
+          </div>
 
-            {/* Loader */}
-            {isLoadingProducts && (
+          {/* Mensajes de estado */}
+          {!isLoadingProducts &&
+            !errorProducts &&
+            products.length > 0 &&
+            filteredProducts.length === 0 && (
               <p className="text-sm text-slate-500 text-center py-4">
-                Cargando detalles...
+                No encontramos detalles para{" "}
+                <span className="font-semibold">“{searchQuery}”</span>. Prueba con otra
+                palabra 😊
               </p>
             )}
 
-            {/* Error */}
-            {errorProducts && !isLoadingProducts && (
-              <p className="text-sm text-red-500 text-center py-4">
-                Ocurrió un error cargando los productos.
-              </p>
-            )}
+          {isLoadingProducts && (
+            <p className="text-sm text-slate-500 text-center py-4">
+              Cargando detalles...
+            </p>
+          )}
 
-            {/* Vacío (sin catálogo aún) */}
-            {!isLoadingProducts && !errorProducts && products.length === 0 && (
-              <p className="text-sm text-slate-500 text-center py-4">
-                Aún no hay productos configurados.
-              </p>
-            )}
+          {errorProducts && !isLoadingProducts && (
+            <p className="text-sm text-red-500 text-center py-4">
+              Ocurrió un error cargando los productos.
+            </p>
+          )}
 
-            {/* Productos backend (con filtro de búsqueda) */}
-            {!isLoadingProducts &&
-              !errorProducts &&
-              filteredProducts.map((product) => {
+          {!isLoadingProducts && !errorProducts && products.length === 0 && (
+            <p className="text-sm text-slate-500 text-center py-4">
+              Aún no hay productos configurados.
+            </p>
+          )}
+
+          {/* GRID de productos */}
+          {!isLoadingProducts && !errorProducts && filteredProducts.length > 0 && (
+            <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+              {filteredProducts.map((product) => {
                 const badges: any = {
                   "Más vendido": "🔥",
                   "Amor & amistad": "💘",
@@ -381,13 +405,13 @@ export default function HomePage() {
                 return (
                   <article
                     key={product.id}
-                    className="group mt-3 flex gap-4 rounded-2xl border border-pink-100 p-4 shadow-md 
-                    bg-gradient-to-r from-white via-pink-50/40 to-white
-                    hover:shadow-xl hover:border-pink-300 hover:bg-gradient-to-br 
-                    hover:-translate-y-1 transform transition-all duration-300 cursor-pointer"
+                    className="group flex flex-col gap-3 rounded-2xl border border-pink-100 p-4 shadow-md 
+                         bg-gradient-to-br from-white via-pink-50/40 to-white
+                         hover:shadow-xl hover:border-pink-300 
+                         hover:-translate-y-1 transform transition-all duration-300"
                   >
                     {/* Imagen */}
-                    <div className="relative w-24 h-24 md:w-28 md:h-28 rounded-xl overflow-hidden shadow-sm bg-white">
+                    <div className="relative w-full h-40 rounded-xl overflow-hidden shadow-sm bg-white">
                       <img
                         src={product.image}
                         alt={product.name}
@@ -401,17 +425,17 @@ export default function HomePage() {
                         {product.tag && (
                           <span
                             className="inline-flex items-center gap-1 bg-pink-100/90 text-pink-700 
-                            text-[11px] font-semibold px-2 py-0.5 rounded-full mb-1"
+                                 text-[11px] font-semibold px-2 py-0.5 rounded-full mb-2"
                           >
                             {badgeIcon} {product.tag}
                           </span>
                         )}
 
-                        <h3 className="text-sm md:text-base font-bold text-slate-900">
+                        <h3 className="text-sm md:text-base font-bold text-slate-900 line-clamp-2">
                           {product.name}
                         </h3>
 
-                        <p className="text-xs text-slate-500 mt-1 leading-snug">
+                        <p className="text-xs text-slate-500 mt-1 leading-snug line-clamp-3">
                           {product.shortDescription}
                         </p>
                       </div>
@@ -432,11 +456,10 @@ export default function HomePage() {
                             Ver detalle
                           </Link>
 
-                          {/* WhatsApp directo */}
                           <button
                             onClick={() => handleWhatsAppClick(undefined, product.name)}
                             className="inline-flex items-center justify-end gap-2 text-[11px] md:text-xs 
-                            text-green-600 hover:text-green-700 font-semibold mt-1"
+                                 text-green-600 hover:text-green-700 font-semibold"
                           >
                             <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-500/10">
                               <img src="/images/whatsapp-icon.png" className="w-3 h-3" />
@@ -444,7 +467,6 @@ export default function HomePage() {
                             <span>Pedir este</span>
                           </button>
 
-                          {/* Añadir al carrito */}
                           <button
                             onClick={() =>
                               addItem({
@@ -456,7 +478,7 @@ export default function HomePage() {
                               })
                             }
                             className="inline-flex items-center justify-end gap-2 text-[11px] md:text-xs 
-                            text-pink-600 hover:text-pink-700 font-semibold mt-1"
+                                 text-pink-600 hover:text-pink-700 font-semibold"
                           >
                             <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-pink-100">
                               🧺
@@ -469,12 +491,23 @@ export default function HomePage() {
                   </article>
                 );
               })}
-          </div>
+            </div>
+          )}
 
-          {/* Columna derecha vacía (solo desktop) */}
-          <div className="order-1 md:order-2 hidden md:block" />
+          {/* Botón "Cargar más" (si usas paginado) */}
+          {!isLoadingProducts && products.length < total && (
+            <div className="flex justify-center mt-6">
+              <button
+                onClick={handleLoadMore}
+                className="px-5 py-2 rounded-full bg-white border border-pink-200 text-pink-600 text-sm font-semibold hover:bg-pink-50"
+              >
+                Cargar más detalles
+              </button>
+            </div>
+          )}
         </div>
       </section>
+
 
       {/* CATEGORÍAS */}
       <section id="categorias" className="space-y-6">

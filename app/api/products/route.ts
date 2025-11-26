@@ -2,15 +2,45 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-// GET  -> lista productos
+// GET  -> lista productos (simple o paginado)
 export async function GET(req: Request) {
-    // opcional: podrías leer query params si quieres
-    const products = await prisma.product.findMany({
-        include: { category: true },
-        orderBy: { createdAt: "desc" },
-    });
+    const url = new URL(req.url);
+    const pageParam = url.searchParams.get("page");
+    const limitParam = url.searchParams.get("limit");
 
-    return NextResponse.json(products);
+    // 🔹 Modo legacy: sin page/limit -> devolver TODO como antes (array simple)
+    if (!pageParam && !limitParam) {
+        const products = await prisma.product.findMany({
+            include: { category: true },
+            orderBy: { createdAt: "desc" },
+        });
+
+        return NextResponse.json(products);
+    }
+
+    // 🔹 Modo paginado
+    const page = Math.max(1, Number(pageParam) || 1);
+    const limitRaw = Number(limitParam) || 20;
+    // límite de seguridad (entre 1 y 50)
+    const limit = Math.min(50, Math.max(1, limitRaw));
+    const skip = (page - 1) * limit;
+
+    const [products, total] = await Promise.all([
+        prisma.product.findMany({
+            include: { category: true },
+            orderBy: { createdAt: "desc" },
+            skip,
+            take: limit,
+        }),
+        prisma.product.count(),
+    ]);
+
+    return NextResponse.json({
+        products,
+        total,
+        page,
+        totalPages: Math.ceil(total / limit),
+    });
 }
 
 // POST -> crear producto
