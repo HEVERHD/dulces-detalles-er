@@ -29,7 +29,7 @@ export default function RootLayout({
 
                 <div className="flex flex-col leading-tight">
                   <span className="font-extrabold text-pink-600 text-lg">
-                    Dulces Detalles ER
+                    Dulces Detalles Cartagena ER
                   </span>
                   <span className="text-xs text-slate-500">
                     Un mundo divertido de sabores
