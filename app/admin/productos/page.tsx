@@ -9,6 +9,8 @@ import {
     FormEvent,
 } from "react";
 import type { Product, ProductCategory } from "@/lib/products";
+import ImageUploader from "@/components/admin/ImageUploader";
+import { useGlobalLoader } from "@/components/providers/LoaderProvider";
 
 const CATEGORY_LABELS: Record<ProductCategory, string> = {
     cumple: "Cumpleaños",
@@ -18,18 +20,54 @@ const CATEGORY_LABELS: Record<ProductCategory, string> = {
     dietetico: "Sin azúcar / especiales",
 };
 
+// 👇 mapear slug de BD -> categoría corta del front
+const DB_TO_APP_CATEGORY: Record<string, ProductCategory> = {
+    cumpleanos: "cumple",
+    aniversarios: "aniversario",
+    declaraciones: "declaracion",
+    infantil: "infantil",
+    dietetico: "dietetico",
+};
+
+// Lee la categoría de un Product que puede venir como string u objeto { slug, name... }
+function getCategoryKeyFromProduct(p: Product): ProductCategory | undefined {
+    const cat: any = (p as any).category;
+
+    if (!cat) return undefined;
+
+    // Por si en algún lugar llega como string (legacy)
+    if (typeof cat === "string") {
+        return cat as ProductCategory;
+    }
+
+    const dbSlug: string | undefined = cat.slug;
+    if (!dbSlug) return undefined;
+
+    return DB_TO_APP_CATEGORY[dbSlug] ?? (dbSlug as ProductCategory);
+}
+
+// Etiquetas predefinidas para los badges
+const TAG_OPTIONS = [
+    { value: "", label: "Sin etiqueta" },
+    { value: "Más vendido", label: "🔥 Más vendido" },
+    { value: "Amor & amistad", label: "💘 Amor & amistad" },
+    { value: "Ideal para cumpleaños", label: "🎂 Ideal para cumpleaños" },
+    // puedes sumar más aquí…
+] as const;
+
+type ProductTagOption = (typeof TAG_OPTIONS)[number]["value"];
 
 type NewProductForm = {
     name: string;
     slug: string;
     price: string;
-    category: ProductCategory | ""; // 👈 en vez de string a secas
-    tag: string;
+    category: ProductCategory | "";
     shortDescription: string;
     description: string;
     image: string;
     isFeatured: boolean;
     isActive: boolean;
+    tag: ProductTagOption;
 };
 
 type FormErrors = Partial<Record<keyof NewProductForm, string>>;
@@ -51,14 +89,12 @@ export default function AdminProductsPage() {
 
     // 🔹 filtros
     const [search, setSearch] = useState("");
-    const [categoryFilter, setCategoryFilter] = useState<ProductCategory | "all">("all");
-
-
+    const [categoryFilter, setCategoryFilter] =
+        useState<ProductCategory | "all">("all");
+    const { showLoader, hideLoader } = useGlobalLoader();
     // 🔹 modal
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingProductId, setEditingProductId] = useState<string | null>(
-        null
-    );
+    const [editingProductId, setEditingProductId] = useState<string | null>(null);
 
     // 🔹 formulario
     const [form, setForm] = useState<NewProductForm>({
@@ -66,7 +102,7 @@ export default function AdminProductsPage() {
         slug: "",
         price: "",
         category: "",
-        tag: "",
+        tag: "" as ProductTagOption,
         shortDescription: "",
         description: "",
         image: "",
@@ -76,19 +112,38 @@ export default function AdminProductsPage() {
     const [errors, setErrors] = useState<FormErrors>({});
     const [slugTouched, setSlugTouched] = useState(false);
 
+    type FeedbackType = "success" | "error";
+
+    const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+    const [feedbackType, setFeedbackType] = useState<FeedbackType>("success");
+    const [feedbackTitle, setFeedbackTitle] = useState("");
+    const [feedbackMessage, setFeedbackMessage] = useState("");
+
+    const openFeedback = (
+        type: FeedbackType,
+        title: string,
+        message: string
+    ) => {
+        setFeedbackType(type);
+        setFeedbackTitle(title);
+        setFeedbackMessage(message);
+        setIsFeedbackOpen(true);
+    };
+
     // ──────────────────────────────
     // Cargar productos desde la API
     // ──────────────────────────────
 
     async function fetchProducts() {
         try {
+            showLoader();                // ⬅️ mostramos loader global
             setIsLoading(true);
 
-            const res = await fetch("/api/products"); // 👈 ESTA es la URL correcta
-            console.log("status productos", res.status); // opcional para ver qué devuelve
+            const res = await fetch("/api/products");
+            console.log("status productos", res.status);
 
             if (!res.ok) {
-                const text = await res.text(); // opcional para debug
+                const text = await res.text();
                 console.error("Respuesta /api/products:", text);
                 throw new Error("Error al cargar productos");
             }
@@ -97,8 +152,14 @@ export default function AdminProductsPage() {
             setProducts(data);
         } catch (err) {
             console.error("Error cargando productos:", err);
+            openFeedback(
+                "error",
+                "Error al cargar productos",
+                "No se pudieron cargar los productos. Intenta de nuevo."
+            );
         } finally {
             setIsLoading(false);
+            hideLoader();                // ⬅️ ocultamos loader global
         }
     }
 
@@ -117,12 +178,14 @@ export default function AdminProductsPage() {
                 p.name.toLowerCase().includes(search.toLowerCase()) ||
                 p.shortDescription.toLowerCase().includes(search.toLowerCase());
 
+            const categoryKey = getCategoryKeyFromProduct(p);
             const matchCategory =
-                categoryFilter === "all" || p.category === categoryFilter;
+                categoryFilter === "all" || categoryKey === categoryFilter;
 
             return matchSearch && matchCategory;
         });
     }, [products, search, categoryFilter]);
+
 
     const totalProducts = products.length;
     const featuredCount = products.filter((p) => p.isFeatured).length;
@@ -184,7 +247,7 @@ export default function AdminProductsPage() {
             slug: "",
             price: "",
             category: "",
-            tag: "",
+            tag: "" as ProductTagOption,
             shortDescription: "",
             description: "",
             image: "",
@@ -202,12 +265,14 @@ export default function AdminProductsPage() {
     };
 
     const openEditModal = (product: Product) => {
+        const categoryKey = getCategoryKeyFromProduct(product);
+
         setForm({
             name: product.name,
             slug: product.slug,
             price: String(product.price),
-            category: product.category ?? "",
-            tag: product.tag ?? "",
+            category: categoryKey ?? "",
+            tag: (product.tag as any) ?? "",
             shortDescription: product.shortDescription,
             description: product.description,
             image: product.image,
@@ -231,20 +296,55 @@ export default function AdminProductsPage() {
         if (!ok) return;
 
         try {
+            showLoader();   // ⬅️ aquí
             const res = await fetch(`/api/products?id=${productId}`, {
                 method: "DELETE",
             });
 
             if (!res.ok) {
-                throw new Error("Error al eliminar producto");
+                const contentType = res.headers.get("content-type") || "";
+                let errorBody: any = null;
+
+                if (contentType.includes("application/json")) {
+                    errorBody = await res.json().catch(() => null);
+                } else {
+                    const text = await res.text().catch(() => "");
+                    errorBody = { raw: text };
+                }
+
+                console.error("❌ Error DELETE /api/products", {
+                    status: res.status,
+                    statusText: res.statusText,
+                    body: errorBody,
+                });
+
+                throw new Error(
+                    errorBody?.error ||
+                    `Error al eliminar producto (status ${res.status})`
+                );
             }
 
             setProducts((prev) => prev.filter((p) => p.id !== productId));
-        } catch (err) {
+
+            openFeedback(
+                "success",
+                "Producto eliminado",
+                `El producto "${product.name}" se eliminó correctamente.`
+            );
+        } catch (err: any) {
             console.error("Error eliminando producto:", err);
-            alert("No se pudo eliminar el producto. Intenta de nuevo.");
+
+            openFeedback(
+                "error",
+                "Error al eliminar",
+                err?.message || "No se pudo eliminar el producto. Intenta de nuevo."
+            );
+        } finally {
+            hideLoader();   // ⬅️ y aquí lo apagamos
         }
     };
+
+
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
@@ -256,7 +356,7 @@ export default function AdminProductsPage() {
 
         const priceNumber = Number(form.price);
         const payload = {
-            id: editingProductId ?? undefined,            // 👈 añadimos esto
+            id: editingProductId ?? undefined,
             slug: form.slug,
             name: form.name,
             shortDescription: form.shortDescription,
@@ -276,13 +376,14 @@ export default function AdminProductsPage() {
         });
 
         try {
+            showLoader();           // ⬅️ loader global
             setIsSaving(true);
 
             if (editingProductId) {
                 const res = await fetch(`/api/products`, {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload), // payload ya lleva id
+                    body: JSON.stringify(payload),
                 });
 
                 if (!res.ok) {
@@ -309,6 +410,11 @@ export default function AdminProductsPage() {
                 }
 
                 console.log("✅ Producto actualizado correctamente");
+                openFeedback(
+                    "success",
+                    "Producto actualizado",
+                    "El producto se guardó correctamente."
+                );
             } else {
                 const res = await fetch("/api/products", {
                     method: "POST",
@@ -340,6 +446,11 @@ export default function AdminProductsPage() {
                 }
 
                 console.log("✅ Producto creado correctamente");
+                openFeedback(
+                    "success",
+                    "Producto creado",
+                    "El nuevo producto se guardó correctamente."
+                );
             }
 
             await fetchProducts();
@@ -347,14 +458,17 @@ export default function AdminProductsPage() {
             setIsModalOpen(false);
         } catch (err: any) {
             console.error("🔥 Error guardando producto:", err);
-            alert(
-                `No se pudo guardar el producto.\n\nDetalle: ${err?.message || "Error desconocido"
-                }`
+            openFeedback(
+                "error",
+                "Error al guardar",
+                err?.message || "No se pudo guardar el producto. Intenta de nuevo."
             );
         } finally {
             setIsSaving(false);
+            hideLoader();          // ⬅️ importantísimo
         }
     };
+
 
     // ──────────────────────────────
     // Render
@@ -401,7 +515,6 @@ export default function AdminProductsPage() {
                         }
                         className="rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-pink-300 focus:border-pink-400"
                     >
-
                         <option value="all">Todas las categorías</option>
                         <option value="cumple">Cumpleaños</option>
                         <option value="aniversario">Aniversarios</option>
@@ -480,7 +593,6 @@ export default function AdminProductsPage() {
              items-start md:items-center
              hover:bg-pink-50/40 transition-colors"
                             >
-
                                 {/* Imagen */}
                                 <div className="w-16 h-16 rounded-lg overflow-hidden bg-slate-100">
                                     <img
@@ -519,7 +631,10 @@ export default function AdminProductsPage() {
 
                                 {/* Categoría */}
                                 <div className="text-xs text-slate-600">
-                                    {CATEGORY_LABELS[p.category] ?? "Sin categoría"}
+                                    {(() => {
+                                        const categoryKey = getCategoryKeyFromProduct(p);
+                                        return categoryKey ? CATEGORY_LABELS[categoryKey] : "Sin categoría";
+                                    })()}
                                 </div>
 
 
@@ -679,18 +794,26 @@ export default function AdminProductsPage() {
                                 </div>
                             </div>
 
-                            {/* Tag */}
+                            {/* Tag como SELECT */}
                             <div>
                                 <label className="block text-xs font-semibold text-slate-700 mb-1">
                                     Etiqueta (badge)
                                 </label>
-                                <input
-                                    type="text"
-                                    placeholder='Ej: "Más vendido", "Amor & amistad"...'
+                                <select
                                     value={form.tag}
                                     onChange={handleChange("tag")}
-                                    className="w-full rounded-lg border border-slate-200 px-3 py-2 outline-none focus:ring-2 focus:ring-pink-300 focus:border-pink-400"
-                                />
+                                    className="w-full rounded-lg border border-slate-200 px-3 py-2 outline-none bg-white focus:ring-2 focus:ring-pink-300 focus:border-pink-400 text-sm"
+                                >
+                                    {TAG_OPTIONS.map((opt) => (
+                                        <option key={opt.value || "none"} value={opt.value}>
+                                            {opt.label}
+                                        </option>
+                                    ))}
+                                </select>
+                                <p className="mt-1 text-[11px] text-slate-400">
+                                    Esto controla el chip que se ve arriba del producto (🔥, 💘,
+                                    etc.).
+                                </p>
                             </div>
 
                             {/* Descripción corta */}
@@ -730,23 +853,16 @@ export default function AdminProductsPage() {
                             </div>
 
                             {/* Imagen */}
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                                    URL de imagen *
-                                </label>
-                                <input
-                                    type="text"
-                                    placeholder="/images/productos/mi-detalle.jpg"
-                                    value={form.image}
-                                    onChange={handleChange("image")}
-                                    className="w-full rounded-lg border border-slate-200 px-3 py-2 outline-none focus:ring-2 focus:ring-pink-300 focus:border-pink-400"
-                                />
-                                {errors.image && (
-                                    <p className="text-[11px] text-red-500 mt-1">
-                                        {errors.image}
-                                    </p>
-                                )}
-                            </div>
+                            <ImageUploader
+                                value={form.image}
+                                onChange={(url) =>
+                                    setForm((prev) => ({
+                                        ...prev,
+                                        image: url,
+                                    }))
+                                }
+                                error={errors.image}
+                            />
 
                             {/* Checks */}
                             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
@@ -799,6 +915,38 @@ export default function AdminProductsPage() {
                     </div>
                 </div>
             )}
+            {isFeedbackOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+                    <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-6 text-center">
+                        <div className="mb-3 flex justify-center">
+                            <div
+                                className={`h-12 w-12 rounded-full flex items-center justify-center text-2xl
+          ${feedbackType === "success"
+                                        ? "bg-emerald-100 text-emerald-600"
+                                        : "bg-rose-100 text-rose-600"
+                                    }`}
+                            >
+                                {feedbackType === "success" ? "✓" : "!"}
+                            </div>
+                        </div>
+
+                        <h3 className="text-lg font-extrabold text-slate-900">
+                            {feedbackTitle}
+                        </h3>
+                        <p className="mt-2 text-sm text-slate-600">{feedbackMessage}</p>
+
+                        <button
+                            type="button"
+                            onClick={() => setIsFeedbackOpen(false)}
+                            className="mt-4 inline-flex items-center justify-center px-4 py-2 rounded-full text-sm font-semibold text-white bg-pink-500 hover:bg-pink-600 shadow-md"
+                        >
+                            Cerrar
+                        </button>
+                    </div>
+                </div>
+            )}
+
         </div>
+
     );
 }

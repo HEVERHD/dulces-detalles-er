@@ -2,13 +2,31 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-// GET  -> lista productos (simple o paginado)
+/**
+ * MAPEO entre los slugs cortos del admin
+ * y los slugs reales en la base de datos
+ */
+const CATEGORY_DB_SLUGS: Record<string, string> = {
+    cumple: "cumpleanos",
+    aniversario: "aniversarios",
+    declaracion: "declaraciones",
+    infantil: "infantil",
+    dietetico: "dietetico",
+};
+
+function resolveDbCategorySlug(frontSlug: string): string {
+    return CATEGORY_DB_SLUGS[frontSlug] ?? frontSlug;
+}
+
+// ──────────────────────────────────────────
+// GET (lista productos o paginado)
+// ──────────────────────────────────────────
 export async function GET(req: Request) {
     const url = new URL(req.url);
     const pageParam = url.searchParams.get("page");
     const limitParam = url.searchParams.get("limit");
 
-    // 🔹 Modo legacy: sin page/limit -> devolver TODO como antes (array simple)
+    // Sin paginación → devolver TODO
     if (!pageParam && !limitParam) {
         const products = await prisma.product.findMany({
             include: { category: true },
@@ -18,11 +36,9 @@ export async function GET(req: Request) {
         return NextResponse.json(products);
     }
 
-    // 🔹 Modo paginado
+    // Con paginación
     const page = Math.max(1, Number(pageParam) || 1);
-    const limitRaw = Number(limitParam) || 20;
-    // límite de seguridad (entre 1 y 50)
-    const limit = Math.min(50, Math.max(1, limitRaw));
+    const limit = Math.min(50, Math.max(1, Number(limitParam) || 20));
     const skip = (page - 1) * limit;
 
     const [products, total] = await Promise.all([
@@ -43,12 +59,16 @@ export async function GET(req: Request) {
     });
 }
 
-// POST -> crear producto
+// ──────────────────────────────────────────
+// POST → crear producto
+// ──────────────────────────────────────────
 export async function POST(req: Request) {
     const body = await req.json();
 
+    const dbSlug = resolveDbCategorySlug(body.categorySlug);
+
     const category = await prisma.category.findUnique({
-        where: { slug: body.categorySlug },
+        where: { slug: dbSlug },
     });
 
     if (!category) {
@@ -76,54 +96,44 @@ export async function POST(req: Request) {
     return NextResponse.json(product);
 }
 
-// PUT -> editar producto (usando body.id)
+// ──────────────────────────────────────────
+// PUT → editar producto
+// ──────────────────────────────────────────
 export async function PUT(req: Request) {
     const body = await req.json();
 
-    const {
-        id,
-        slug,
-        name,
-        shortDescription,
-        description,
-        price,
-        tag,
-        image,
-        isFeatured,
-        isActive,
-        categorySlug,
-    } = body;
-
-    if (!id) {
+    if (!body.id) {
         return NextResponse.json(
-            { error: "Id de producto requerido en el body" },
+            { error: "Id de producto requerido" },
             { status: 400 }
         );
     }
 
+    const dbSlug = resolveDbCategorySlug(body.categorySlug);
+
     const category = await prisma.category.findUnique({
-        where: { slug: categorySlug },
+        where: { slug: dbSlug },
     });
 
     if (!category) {
         return NextResponse.json(
-            { error: `Categoría '${categorySlug}' no encontrada` },
+            { error: `Categoría '${body.categorySlug}' no encontrada` },
             { status: 400 }
         );
     }
 
     const product = await prisma.product.update({
-        where: { id },
+        where: { id: body.id },
         data: {
-            slug,
-            name,
-            shortDescription,
-            description,
-            price,
-            tag: tag || null,
-            image,
-            isFeatured,
-            isActive,
+            slug: body.slug,
+            name: body.name,
+            shortDescription: body.shortDescription,
+            description: body.description,
+            price: body.price,
+            tag: body.tag || null,
+            image: body.image,
+            isFeatured: body.isFeatured,
+            isActive: body.isActive,
             categoryId: category.id,
         },
     });
@@ -131,14 +141,16 @@ export async function PUT(req: Request) {
     return NextResponse.json(product);
 }
 
-// DELETE -> eliminar producto (usando ?id= en la query)
+// ──────────────────────────────────────────
+// DELETE → eliminar producto
+// ──────────────────────────────────────────
 export async function DELETE(req: Request) {
     const url = new URL(req.url);
     const id = url.searchParams.get("id");
 
     if (!id) {
         return NextResponse.json(
-            { error: "Id de producto requerido en la query (?id=...)" },
+            { error: "Id requerido (?id=...)" },
             { status: 400 }
         );
     }

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Product } from "../lib/products";
 import { useCart } from "@/components/CartContext";
+import { useGlobalLoader } from "@/components/providers/LoaderProvider";
 
 const CATEGORIES = [
   { id: "cumple", name: "Cumpleaños 🎂", description: "Tortas, cajas sorpresa, globos y más." },
@@ -35,6 +36,7 @@ export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [errorProducts, setErrorProducts] = useState<string | null>(null);
+  const { showLoader, hideLoader } = useGlobalLoader();
 
   // Paginación
   const [page, setPage] = useState(1);
@@ -101,6 +103,7 @@ export default function HomePage() {
   useEffect(() => {
     const loadInitialProducts = async () => {
       try {
+        showLoader();
         setIsLoadingProducts(true);
         setErrorProducts(null);
 
@@ -116,6 +119,7 @@ export default function HomePage() {
         setErrorProducts(err?.message);
       } finally {
         setIsLoadingProducts(false);
+        hideLoader();
       }
     };
 
@@ -127,6 +131,7 @@ export default function HomePage() {
     if (products.length >= total) return;
 
     try {
+      showLoader();
       setIsLoadingProducts(true);
       const nextPage = page + 1;
 
@@ -141,6 +146,7 @@ export default function HomePage() {
       setErrorProducts(err?.message);
     } finally {
       setIsLoadingProducts(false);
+      hideLoader();
     }
   };
 
