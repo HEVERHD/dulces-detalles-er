@@ -1,3 +1,4 @@
+// next.config.ts
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
@@ -6,10 +7,14 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "res.cloudinary.com",
-        // opcionalmente podrías afinar aún más:
-        // pathname: "/dmfcu3tnj/image/upload/**",
       },
     ],
+  },
+  experimental: {
+    serverActions: {
+      // súbelo a lo que necesites: 5mb, 10mb, 20mb...
+      bodySizeLimit: "10mb",
+    },
   },
 };
 

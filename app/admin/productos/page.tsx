@@ -12,13 +12,6 @@ import type { Product, ProductCategory } from "@/lib/products";
 import ImageUploader from "@/components/admin/ImageUploader";
 import { useGlobalLoader } from "@/components/providers/LoaderProvider";
 
-const CATEGORY_LABELS: Record<ProductCategory, string> = {
-    cumple: "Cumpleaños",
-    aniversario: "Aniversarios",
-    declaracion: "Declaraciones",
-    infantil: "Infantil",
-    dietetico: "Sin azúcar / especiales",
-};
 
 // 👇 mapear slug de BD -> categoría corta del front
 const DB_TO_APP_CATEGORY: Record<string, ProductCategory> = {
@@ -68,9 +61,18 @@ type NewProductForm = {
     isFeatured: boolean;
     isActive: boolean;
     tag: ProductTagOption;
+    stock: string;        // lo manejamos como string en el input
+    trackStock: boolean;  // checkbox
 };
 
 type FormErrors = Partial<Record<keyof NewProductForm, string>>;
+type ProductSaleRecord = {
+    id: string;
+    productId: string;
+    quantity: number;
+    totalPrice: number;
+    createdAt: string;
+};
 
 function slugify(value: string) {
     return value
@@ -80,6 +82,23 @@ function slugify(value: string) {
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/(^-|-$)+/g, "");
 }
+
+function parsePrice(value: string): number {
+    const digits = value.replace(/[^\d]/g, ""); // solo números
+    if (!digits) return NaN;
+    return Number(digits);
+}
+
+function formatPriceForInput(value: string): string {
+    const digits = value.replace(/[^\d]/g, "");
+    if (!digits) return "";
+    const num = Number(digits);
+    // solo miles, sin decimales ni símbolo
+    return num.toLocaleString("es-CO", {
+        maximumFractionDigits: 0,
+    });
+}
+
 
 export default function AdminProductsPage() {
     // 🔹 Estado con productos (ahora vienen de la API)
@@ -91,6 +110,9 @@ export default function AdminProductsPage() {
     const [search, setSearch] = useState("");
     const [categoryFilter, setCategoryFilter] =
         useState<ProductCategory | "all">("all");
+    const [statusFilter, setStatusFilter] =
+        useState<"all" | "active" | "inactive">("all");
+
     const { showLoader, hideLoader } = useGlobalLoader();
     // 🔹 modal
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -108,7 +130,21 @@ export default function AdminProductsPage() {
         image: "",
         isFeatured: false,
         isActive: true,
+        stock: "",
+        trackStock: false,
     });
+
+    // 🔹 Historial de ventas (modal)
+    const [salesModalOpen, setSalesModalOpen] = useState(false);
+    const [salesModalProduct, setSalesModalProduct] = useState<Product | null>(null);
+    const [salesLoading, setSalesLoading] = useState(false);
+    const [salesError, setSalesError] = useState<string | null>(null);
+    const [salesRecords, setSalesRecords] = useState<ProductSaleRecord[]>([]);
+    const [salesSummary, setSalesSummary] = useState<{
+        totalQuantity: number;
+        totalAmount: number;
+    }>({ totalQuantity: 0, totalAmount: 0 });
+
     const [errors, setErrors] = useState<FormErrors>({});
     const [slugTouched, setSlugTouched] = useState(false);
 
@@ -133,6 +169,11 @@ export default function AdminProductsPage() {
     // ──────────────────────────────
     // Cargar productos desde la API
     // ──────────────────────────────
+
+    const [backendCategories, setBackendCategories] = useState<
+        { id: string; slug: string; name: string }[]
+    >([]);
+
 
     async function fetchProducts() {
         try {
@@ -162,11 +203,36 @@ export default function AdminProductsPage() {
             hideLoader();                // ⬅️ ocultamos loader global
         }
     }
+    async function fetchBackendCategories() {
+        try {
+            const res = await fetch("/api/admin/categories");
+
+            if (!res.ok) {
+                console.error("Error /api/admin/categories:", res.status);
+                return;
+            }
+
+            const data = await res.json();
+
+            // Normalizar datos
+            setBackendCategories(
+                data.map((c: any) => ({
+                    id: c.id,
+                    slug: c.slug,
+                    name: c.name,
+                }))
+            );
+        } catch (err) {
+            console.error("Error cargando categorías del backend:", err);
+        }
+    }
 
 
     useEffect(() => {
         fetchProducts();
+        fetchBackendCategories();
     }, []);
+
 
     // ──────────────────────────────
     // Derivados / métricas / filtros
@@ -182,9 +248,17 @@ export default function AdminProductsPage() {
             const matchCategory =
                 categoryFilter === "all" || categoryKey === categoryFilter;
 
-            return matchSearch && matchCategory;
+            const matchStatus =
+                statusFilter === "all"
+                    ? true
+                    : statusFilter === "active"
+                        ? p.isActive
+                        : !p.isActive; // inactive
+
+            return matchSearch && matchCategory && matchStatus;
         });
-    }, [products, search, categoryFilter]);
+    }, [products, search, categoryFilter, statusFilter]);
+
 
 
     const totalProducts = products.length;
@@ -233,13 +307,26 @@ export default function AdminProductsPage() {
         if (!data.image.trim())
             newErrors.image = "La URL de la imagen es obligatoria.";
 
-        const priceNumber = Number(data.price);
+        const priceNumber = parsePrice(data.price);
         if (!data.price.trim() || Number.isNaN(priceNumber) || priceNumber <= 0) {
             newErrors.price = "Ingresa un precio válido mayor a 0.";
         }
 
+        // 🆕 validación de stock solo si se controla
+        if (data.trackStock) {
+            const parsedStock = Number(data.stock);
+            if (
+                !data.stock.trim() ||
+                Number.isNaN(parsedStock) ||
+                parsedStock < 0
+            ) {
+                newErrors.stock = "Ingresa un stock válido (0 o mayor).";
+            }
+        }
+
         return newErrors;
     };
+
 
     const resetForm = () => {
         setForm({
@@ -253,6 +340,8 @@ export default function AdminProductsPage() {
             image: "",
             isFeatured: false,
             isActive: true,
+            stock: "",
+            trackStock: false,
         });
         setErrors({});
         setSlugTouched(false);
@@ -270,7 +359,7 @@ export default function AdminProductsPage() {
         setForm({
             name: product.name,
             slug: product.slug,
-            price: String(product.price),
+            price: product.price.toLocaleString("es-CO"),
             category: categoryKey ?? "",
             tag: (product.tag as any) ?? "",
             shortDescription: product.shortDescription,
@@ -278,12 +367,16 @@ export default function AdminProductsPage() {
             image: product.image,
             isFeatured: product.isFeatured ?? false,
             isActive: product.isActive ?? true,
+
+            stock: String(product.stock ?? 0),
+            trackStock: product.trackStock ?? false,
         });
         setEditingProductId(product.id);
         setErrors({});
         setSlugTouched(true);
         setIsModalOpen(true);
     };
+
 
 
     const handleDelete = async (productId: string) => {
@@ -344,17 +437,144 @@ export default function AdminProductsPage() {
         }
     };
 
+    const handleRegisterSale = async (product: Product) => {
+        // Pedimos la cantidad de forma sencilla por ahora
+        const input = window.prompt(
+            `¿Cuántas unidades vendiste de "${product.name}"?`,
+            "1"
+        );
 
+        if (input === null) return; // canceló
+
+        const qty = Number(input);
+        if (!qty || !Number.isFinite(qty) || qty <= 0) {
+            openFeedback(
+                "error",
+                "Cantidad inválida",
+                "Ingresa un número mayor a 0 para registrar la venta."
+            );
+            return;
+        }
+
+        try {
+            showLoader();
+
+            const res = await fetch("/api/products/sell", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    productId: product.id,
+                    quantity: qty,
+                }),
+            });
+
+            if (!res.ok) {
+                const body = await res.json().catch(() => null);
+                const msg =
+                    body?.error ||
+                    `Error al registrar la venta (status ${res.status}).`;
+
+                openFeedback("error", "No se pudo registrar la venta", msg);
+                return;
+            }
+
+            const data = await res.json();
+
+            // Actualizamos el producto en el estado local
+            const updatedProduct = data.product as Product;
+
+            setProducts((prev) =>
+                prev.map((p) =>
+                    p.id === product.id ? { ...p, ...updatedProduct } : p
+                )
+            );
+
+            openFeedback(
+                "success",
+                "Venta registrada",
+                `Se registró la venta de ${qty} unidad(es) de "${product.name}".`
+            );
+        } catch (err: any) {
+            console.error("Error en handleRegisterSale:", err);
+            openFeedback(
+                "error",
+                "Error al registrar venta",
+                err?.message || "Ocurrió un error inesperado."
+            );
+        } finally {
+            hideLoader();
+        }
+    };
+
+    const formatCurrency = (value: number) =>
+        value.toLocaleString("es-CO", {
+            style: "currency",
+            currency: "COP",
+            maximumFractionDigits: 0,
+        });
+
+    const openSalesModal = async (product: Product) => {
+        setSalesModalProduct(product);
+        setSalesModalOpen(true);
+        setSalesLoading(true);
+        setSalesError(null);
+        setSalesRecords([]);
+        setSalesSummary({ totalQuantity: 0, totalAmount: 0 });
+
+        try {
+            const res = await fetch(
+                `/api/products/sales?productId=${product.id}&limit=20`
+            );
+
+            if (!res.ok) {
+                const body = await res.json().catch(() => null);
+                const msg = body?.error || "No se pudo cargar el historial de ventas.";
+                setSalesError(msg);
+                return;
+            }
+
+            const data = await res.json();
+
+            setSalesRecords(
+                (data.sales || []).map((s: any) => ({
+                    id: s.id,
+                    productId: s.productId,
+                    quantity: s.quantity,
+                    totalPrice: s.totalPrice,
+                    createdAt: s.createdAt,
+                })) as ProductSaleRecord[]
+            );
+
+            setSalesSummary({
+                totalQuantity: data.totalQuantity ?? 0,
+                totalAmount: data.totalAmount ?? 0,
+            });
+        } catch (err: any) {
+            console.error("Error cargando historial de ventas:", err);
+            setSalesError(
+                err?.message || "Ocurrió un error cargando el historial de ventas."
+            );
+        } finally {
+            setSalesLoading(false);
+        }
+    };
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
 
         const validation = validate(form);
         setErrors(validation);
-
         if (Object.keys(validation).length > 0) return;
 
-        const priceNumber = Number(form.price);
+        const priceNumber = parsePrice(form.price);
+        const parsedStock = Number(form.stock);
+        const safeStock =
+            form.trackStock && !Number.isNaN(parsedStock) && parsedStock >= 0
+                ? parsedStock
+                : 0;
+
         const payload = {
             id: editingProductId ?? undefined,
             slug: form.slug,
@@ -367,6 +587,10 @@ export default function AdminProductsPage() {
             isFeatured: form.isFeatured,
             isActive: form.isActive,
             categorySlug: form.category,
+
+            // 🆕
+            stock: safeStock,
+            trackStock: form.trackStock,
         };
 
         console.log("🟦 handleSubmit → payload", {
@@ -508,6 +732,7 @@ export default function AdminProductsPage() {
                 </div>
 
                 <div className="flex gap-2 text-sm">
+                    {/* filtro por categoría */}
                     <select
                         value={categoryFilter}
                         onChange={(e) =>
@@ -516,13 +741,28 @@ export default function AdminProductsPage() {
                         className="rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-pink-300 focus:border-pink-400"
                     >
                         <option value="all">Todas las categorías</option>
-                        <option value="cumple">Cumpleaños</option>
-                        <option value="aniversario">Aniversarios</option>
-                        <option value="declaracion">Declaraciones</option>
-                        <option value="infantil">Infantil</option>
-                        <option value="dietetico">Sin azúcar / especiales</option>
+
+                        {backendCategories.map((cat) => (
+                            <option key={cat.id} value={DB_TO_APP_CATEGORY[cat.slug]}>
+                                {cat.name}
+                            </option>
+                        ))}
+                    </select>
+
+                    {/* filtro por estado (nuevo) */}
+                    <select
+                        value={statusFilter}
+                        onChange={(e) =>
+                            setStatusFilter(e.target.value as "all" | "active" | "inactive")
+                        }
+                        className="rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-pink-300 focus:border-pink-400"
+                    >
+                        <option value="all">Todos los estados</option>
+                        <option value="active">Solo activos</option>
+                        <option value="inactive">Solo ocultos</option>
                     </select>
                 </div>
+
             </section>
 
             {/* Métricas rápidas */}
@@ -566,14 +806,17 @@ export default function AdminProductsPage() {
 
             {/* Tabla / listado */}
             <section className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-                <div className="hidden md:grid grid-cols-[80px,2fr,1fr,1fr,100px,110px] gap-3 px-4 py-2 text-[11px] font-semibold text-slate-500 border-b border-slate-100 uppercase tracking-wide">
+                <div className="hidden md:grid grid-cols-[80px,2fr,1fr,1fr,80px,100px,110px] gap-3 px-4 py-2 text-[11px] font-semibold text-slate-500 border-b border-slate-100 uppercase tracking-wide">
                     <span>Foto</span>
                     <span>Producto</span>
                     <span>Categoría</span>
                     <span>Etiqueta</span>
+                    <span className="text-center">Stock</span> {/* 🆕 */}
                     <span className="text-right">Precio</span>
                     <span className="text-right">Acciones</span>
                 </div>
+
+
 
                 <div className="divide-y divide-slate-100">
                     {isLoading ? (
@@ -588,11 +831,12 @@ export default function AdminProductsPage() {
                         filteredProducts.map((p) => (
                             <div
                                 key={p.id}
-                                className="grid md:grid-cols-[80px,2.2fr,1fr,1fr,0.8fr,0.9fr] 
-             gap-3 px-4 py-4 
-             items-start md:items-center
-             hover:bg-pink-50/40 transition-colors"
+                                className="grid md:grid-cols-[80px,2.2fr,1fr,1fr,0.6fr,0.8fr,0.9fr]
+    gap-3 px-4 py-4 
+    items-start md:items-center
+    hover:bg-pink-50/40 transition-colors"
                             >
+
                                 {/* Imagen */}
                                 <div className="w-16 h-16 rounded-lg overflow-hidden bg-slate-100">
                                     <img
@@ -630,12 +874,14 @@ export default function AdminProductsPage() {
                                 </div>
 
                                 {/* Categoría */}
+                                {/* Categoría */}
                                 <div className="text-xs text-slate-600">
                                     {(() => {
-                                        const categoryKey = getCategoryKeyFromProduct(p);
-                                        return categoryKey ? CATEGORY_LABELS[categoryKey] : "Sin categoría";
+                                        const cat = (p as any).category;
+                                        return cat?.name ?? "Sin categoría";
                                     })()}
                                 </div>
+
 
 
                                 {/* Tag */}
@@ -651,6 +897,46 @@ export default function AdminProductsPage() {
                                     )}
                                 </div>
 
+                                {/* Stock */}
+                                {/* Stock */}
+                                <div className="text-center text-xs text-slate-700">
+                                    {p.trackStock ? (
+                                        <div className="inline-flex flex-col items-center gap-1">
+                                            <span
+                                                className={`inline-flex items-center rounded-full px-2 py-[2px] text-[11px] font-semibold
+          ${p.stock === 0
+                                                        ? "bg-rose-100 text-rose-700"
+                                                        : p.stock <= 3
+                                                            ? "bg-amber-100 text-amber-700"
+                                                            : "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                                                    }
+        `}
+                                            >
+                                                {p.stock === 0
+                                                    ? "Agotado"
+                                                    : p.stock <= 3
+                                                        ? `Stock bajo (${p.stock})`
+                                                        : `${p.stock} disponibles`}
+                                            </span>
+
+                                            <span className="text-[10px] text-slate-400">
+                                                Stock controlado
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        <div className="inline-flex flex-col items-center gap-1">
+                                            <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-500 text-[10px] px-2 py-[2px]">
+                                                Sin control
+                                            </span>
+                                            <span className="text-[10px] text-slate-400">
+                                                No descuenta inventario
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+
+
+
                                 {/* Precio */}
                                 <div className="text-right text-sm font-semibold text-pink-600">
                                     {p.price.toLocaleString("es-CO", {
@@ -662,6 +948,22 @@ export default function AdminProductsPage() {
 
                                 {/* Acciones */}
                                 <div className="flex md:justify-end gap-2 text-xs">
+                                    <button
+                                        type="button"
+                                        onClick={() => openSalesModal(p)}
+                                        className="px-3 py-1 rounded-full border border-sky-100 text-sky-700 hover:bg-sky-50"
+                                    >
+                                        Ver ventas
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRegisterSale(p)}
+                                        className="px-3 py-1 rounded-full border border-emerald-100 text-emerald-700 hover:bg-emerald-50"
+                                    >
+                                        Registrar venta
+                                    </button>
+
                                     <button
                                         type="button"
                                         onClick={() => openEditModal(p)}
@@ -677,6 +979,8 @@ export default function AdminProductsPage() {
                                         Eliminar
                                     </button>
                                 </div>
+
+
                             </div>
                         ))
                     )}
@@ -709,7 +1013,8 @@ export default function AdminProductsPage() {
                             </button>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="space-y-4 text-sm">
+                        <form onSubmit={handleSubmit} noValidate className="space-y-4 text-sm">
+
                             {/* Nombre */}
                             <div>
                                 <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -756,19 +1061,39 @@ export default function AdminProductsPage() {
                                         Precio (COP) *
                                     </label>
                                     <input
-                                        type="number"
-                                        min={0}
-                                        step="1000"
+                                        type="text"
+                                        inputMode="numeric" // solo teclado numérico en mobile
                                         value={form.price}
-                                        onChange={handleChange("price")}
-                                        className="w-full rounded-lg border border-slate-200 px-3 py-2 outline-none focus:ring-2 focus:ring-pink-300 focus:border-pink-400"
+                                        onChange={(e) => {
+                                            const formatted = formatPriceForInput(e.target.value);
+                                            setForm((prev) => ({
+                                                ...prev,
+                                                price: formatted,
+                                            }));
+                                        }}
+                                        className={
+                                            "w-full rounded-lg border px-3 py-2 outline-none focus:ring-2 focus:ring-pink-300 focus:border-pink-400 " +
+                                            (errors.price ? "border-rose-300 bg-rose-50/60" : "border-slate-200")
+                                        }
+                                        placeholder="10.000"
                                     />
+
+                                    {errors.price && (
+                                        <div className="mt-1 flex items-start gap-1 text-[11px] text-rose-600">
+                                            <span className="mt-[2px] inline-flex h-4 w-4 items-center justify-center rounded-full bg-rose-100 font-bold">
+                                                !
+                                            </span>
+                                            <p>{errors.price}</p>
+                                        </div>
+                                    )}
+
                                     {errors.price && (
                                         <p className="text-[11px] text-red-500 mt-1">
                                             {errors.price}
                                         </p>
                                     )}
                                 </div>
+
 
                                 <div>
                                     <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -780,18 +1105,69 @@ export default function AdminProductsPage() {
                                         className="w-full rounded-lg border border-slate-200 px-3 py-2 outline-none bg-white focus:ring-2 focus:ring-pink-300 focus:border-pink-400"
                                     >
                                         <option value="">Selecciona una opción</option>
-                                        <option value="cumple">Cumpleaños</option>
-                                        <option value="aniversario">Aniversarios</option>
-                                        <option value="declaracion">Declaraciones</option>
-                                        <option value="infantil">Infantil</option>
-                                        <option value="dietetico">Sin azúcar / especiales</option>
+
+                                        {backendCategories.map((cat) => (
+                                            <option
+                                                key={cat.id}
+                                                value={DB_TO_APP_CATEGORY[cat.slug]}
+                                            >
+                                                {cat.name}
+                                            </option>
+                                        ))}
                                     </select>
+
                                     {errors.category && (
                                         <p className="text-[11px] text-red-500 mt-1">
                                             {errors.category}
                                         </p>
                                     )}
                                 </div>
+                            </div>
+
+                            {/* Control de stock */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        id="trackStock"
+                                        type="checkbox"
+                                        checked={form.trackStock}
+                                        onChange={handleChange("trackStock")}
+                                        className="rounded border-slate-300"
+                                    />
+                                    <label
+                                        htmlFor="trackStock"
+                                        className="text-xs font-semibold text-slate-700"
+                                    >
+                                        Controlar stock / disponibilidad
+                                    </label>
+                                </div>
+
+                                {form.trackStock && (
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                            Stock disponible
+                                        </label>
+                                        <input
+                                            type="number"
+                                            min={0}
+                                            value={form.stock}
+                                            onChange={handleChange("stock")}
+                                            className={
+                                                "w-full rounded-lg border px-3 py-2 outline-none focus:ring-2 focus:ring-pink-300 focus:border-pink-400 " +
+                                                (errors.stock ? "border-rose-300 bg-rose-50/60" : "border-slate-200")
+                                            }
+                                            placeholder="Ej: 5"
+                                        />
+                                        {errors.stock && (
+                                            <p className="text-[11px] text-red-500 mt-1">
+                                                {errors.stock}
+                                            </p>
+                                        )}
+                                        <p className="mt-1 text-[11px] text-slate-400">
+                                            Si está en 0 se mostrará como agotado.
+                                        </p>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Tag como SELECT */}
@@ -946,7 +1322,117 @@ export default function AdminProductsPage() {
                 </div>
             )}
 
-        </div>
+            {/* MODAL HISTORIAL DE VENTAS */}
+            {salesModalOpen && salesModalProduct && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+                    <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
+                        <div className="flex items-start justify-between gap-3 mb-4">
+                            <div>
+                                <h2 className="text-lg font-extrabold text-slate-900">
+                                    Historial de ventas
+                                </h2>
+                                <p className="text-xs text-slate-500">
+                                    Producto:{" "}
+                                    <span className="font-semibold">
+                                        {salesModalProduct.name}
+                                    </span>
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    setSalesModalOpen(false);
+                                    setSalesModalProduct(null);
+                                    setSalesRecords([]);
+                                    setSalesError(null);
+                                }}
+                                className="text-slate-400 hover:text-slate-600 text-lg"
+                            >
+                                ✕
+                            </button>
+                        </div>
 
+                        {/* Resumen rápido */}
+                        <section className="grid grid-cols-2 gap-3 mb-4">
+                            <div className="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2">
+                                <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">
+                                    Unidades vendidas
+                                </p>
+                                <p className="mt-1 text-lg font-extrabold text-slate-900">
+                                    {salesSummary.totalQuantity}
+                                </p>
+                            </div>
+                            <div className="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2">
+                                <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">
+                                    Monto total
+                                </p>
+                                <p className="mt-1 text-lg font-extrabold text-emerald-700">
+                                    {formatCurrency(salesSummary.totalAmount)}
+                                </p>
+                            </div>
+                        </section>
+
+                        {/* Contenido del historial */}
+                        {salesLoading ? (
+                            <div className="py-6 text-center text-sm text-slate-500">
+                                Cargando historial...
+                            </div>
+                        ) : salesError ? (
+                            <div className="py-4 text-sm text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-3">
+                                {salesError}
+                            </div>
+                        ) : salesRecords.length === 0 ? (
+                            <div className="py-6 text-center text-sm text-slate-500">
+                                Aún no hay ventas registradas para este producto.
+                            </div>
+                        ) : (
+                            <div className="space-y-2">
+                                <div className="grid grid-cols-[1.2fr,1fr,1.2fr] text-[11px] font-semibold text-slate-500 border-b border-slate-100 pb-1">
+                                    <span>Fecha</span>
+                                    <span className="text-right">Cantidad</span>
+                                    <span className="text-right">Total</span>
+                                </div>
+
+                                {salesRecords.map((s) => (
+                                    <div
+                                        key={s.id}
+                                        className="grid grid-cols-[1.2fr,1fr,1.2fr] text-xs text-slate-700 py-1 border-b border-slate-50"
+                                    >
+                                        <span>
+                                            {new Date(s.createdAt).toLocaleString("es-CO", {
+                                                dateStyle: "short",
+                                                timeStyle: "short",
+                                            })}
+                                        </span>
+                                        <span className="text-right font-semibold">
+                                            {s.quantity}
+                                        </span>
+                                        <span className="text-right font-semibold">
+                                            {formatCurrency(s.totalPrice)}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        <div className="mt-4 flex justify-end">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setSalesModalOpen(false);
+                                    setSalesModalProduct(null);
+                                    setSalesRecords([]);
+                                    setSalesError(null);
+                                }}
+                                className="px-4 py-2 rounded-full text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                            >
+                                Cerrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+
+        </div>
     );
 }
