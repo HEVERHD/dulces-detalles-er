@@ -8,7 +8,6 @@ import { useCart } from "@/components/CartContext";
 import { useGlobalLoader } from "@/components/providers/LoaderProvider";
 
 
-import type { Metadata } from "next";
 import Footer from "@/components/Footer";
 
 

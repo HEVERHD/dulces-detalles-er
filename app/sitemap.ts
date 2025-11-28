@@ -1,22 +1,62 @@
+// app/sitemap.ts
 import { prisma } from "@/lib/prisma";
+import type { MetadataRoute } from "next";
 
-export default async function sitemap() {
-    const products = await prisma.product.findMany();
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+    const baseUrl = "https://www.dulcesdetallescartagenaer.com";
 
-    const productEntries = products.map((product) => ({
-        url: `https://www.dulcesdetallescartagenaer.com/producto/${product.slug}`,
-        lastModified: new Date(product.updatedAt),
-        changeFrequency: "weekly",
-        priority: 0.8,
-    }));
+    const categories = [
+        "cumple",
+        "aniversario",
+        "declaracion",
+        "infantil",
+        "dietetico",
+    ];
 
-    return [
+    // Home y categorías (siempre)
+    const staticEntries: MetadataRoute.Sitemap = [
         {
-            url: "https://www.dulcesdetallescartagenaer.com/",
+            url: `${baseUrl}/`,
             lastModified: new Date(),
-            changeFrequency: "weekly",
+            changeFrequency: "daily",
             priority: 1.0,
         },
-        ...productEntries,
+        ...categories.map<MetadataRoute.Sitemap[number]>((slug) => ({
+            url: `${baseUrl}/categoria/${slug}`,
+            lastModified: new Date(),
+            changeFrequency: "weekly",
+            priority: 0.8,
+        })),
     ];
+
+    // 👇 Si no hay DATABASE_URL, devolvemos solo lo estático
+    if (!process.env.DATABASE_URL) {
+        console.warn(
+            "[sitemap] DATABASE_URL no está definida. Se genera sitemap solo con home y categorías."
+        );
+        return staticEntries;
+    }
+
+    // 👇 Si SÍ hay DATABASE_URL, intentamos traer productos
+    let productEntries: MetadataRoute.Sitemap[number][] = [];
+
+    try {
+        const products = await prisma.product.findMany({
+            select: {
+                slug: true,
+                updatedAt: true,
+            },
+        });
+
+        productEntries = products.map<MetadataRoute.Sitemap[number]>((p) => ({
+            url: `${baseUrl}/producto/${p.slug}`,
+            lastModified: new Date(p.updatedAt),
+            changeFrequency: "daily",
+            priority: 0.9,
+        }));
+    } catch (err) {
+        console.error("[sitemap] Error cargando productos para el sitemap:", err);
+    }
+
+    return [...staticEntries, ...productEntries];
 }
