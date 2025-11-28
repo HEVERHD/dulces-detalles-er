@@ -48,3 +48,4 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         ...productEntries,
     ];
 }
+// app/sitemap.ts
