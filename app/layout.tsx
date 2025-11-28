@@ -1,11 +1,15 @@
 // app/layout.tsx
 import type { Metadata } from "next";
 import "./globals.css";
-import Providers from "./providers";
+
+import { LoaderProvider } from "@/components/providers/LoaderProvider";
+import { CartProvider } from "@/components/CartContext";
+import RootClientShell from "@/components/RootClientShell";
 
 export const metadata: Metadata = {
-  title: "Dulces Detalles ER | Marketplace",
-  description: "Un mundo divertido de sabores y detalles en Cartagena.",
+  title: "Dulces Detalles ER | Arreglos y regalos personalizados en Cartagena",
+  description:
+    "Arreglos con chocolates, flores, peluches, tazas y detalles personalizados para cumpleaños, aniversarios, novenas y más en Cartagena.",
 };
 
 export default function RootLayout({
@@ -15,54 +19,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      <body className="bg-gradient-to-b from-pink-50 via-white to-sky-50 text-slate-900 min-h-screen">
-        <Providers>
-          <header className="border-b border-pink-100 bg-white/70 backdrop-blur sticky top-0 z-20">
-            <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-              {/* LOGO + NOMBRE */}
-              <div className="flex items-center gap-3">
-                <img
-                  src="/images/logo.png" // asegúrate que el archivo exista aquí
-                  alt="Dulces Detalles ER"
-                  className="w-14 h-auto drop-shadow-md"
-                />
-
-                <div className="flex flex-col leading-tight">
-                  <span className="font-extrabold text-pink-600 text-lg">
-                    Dulces Detalles Cartagena ER
-                  </span>
-                  <span className="text-xs text-slate-500">
-                    Un mundo divertido de sabores
-                  </span>
-                </div>
-              </div>
-
-              {/* NAV */}
-              <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
-                <a href="/categorias" className="hover:text-pink-600">
-                  Categorías
-                </a>
-                <a href="/destacados" className="hover:text-pink-600">
-                  Detalles destacados
-                </a>
-                <a href="/sucursales" className="hover:text-pink-600">
-                  Sucursales
-                </a>
-
-                <a
-                  href="#contacto"
-                  className="px-4 py-1.5 rounded-full bg-pink-500 text-white hover:bg-pink-600 shadow-md"
-                >
-                  Pedir por WhatsApp
-                </a>
-              </nav>
-            </div>
-          </header>
-
-          <main className="max-w-6xl mx-auto px-4 pb-24 pt-6">
-            {children}
-          </main>
-        </Providers>
+      <body className="bg-pink-50 antialiased">
+        {/* Providers globales (para useGlobalLoader y useCart) */}
+        <LoaderProvider>
+          <CartProvider>
+            <RootClientShell>{children}</RootClientShell>
+          </CartProvider>
+        </LoaderProvider>
       </body>
     </html>
   );

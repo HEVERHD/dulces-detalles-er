@@ -42,7 +42,10 @@ export const metadata: Metadata = {
 export default function Page() {
   return (
     <>
-      <HomePageClient />
+      <div className="max-w-6xl mx-auto px-3 md:px-4 lg:px-0">
+
+        <HomePageClient />
+      </div>
 
       {/* JSON-LD LocalBusiness */}
       <script

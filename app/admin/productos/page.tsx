@@ -47,7 +47,7 @@ const TAG_OPTIONS = [
     { value: "Ideal para cumpleaños", label: "🎂 Ideal para cumpleaños" },
     // puedes sumar más aquí…
 ] as const;
-
+const PAGE_SIZE = 20;
 type ProductTagOption = (typeof TAG_OPTIONS)[number]["value"];
 
 type NewProductForm = {
@@ -112,6 +112,7 @@ export default function AdminProductsPage() {
         useState<ProductCategory | "all">("all");
     const [statusFilter, setStatusFilter] =
         useState<"all" | "active" | "inactive">("all");
+    const [currentPage, setCurrentPage] = useState(1);
 
     const { showLoader, hideLoader } = useGlobalLoader();
     // 🔹 modal
@@ -259,7 +260,27 @@ export default function AdminProductsPage() {
         });
     }, [products, search, categoryFilter, statusFilter]);
 
+    // Cuando cambian filtros o búsqueda, volvemos a la página 1
 
+    // Cuando cambian filtros o búsqueda, volvemos a la página 1
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [search, categoryFilter, statusFilter]);
+
+    const totalItems = filteredProducts.length;
+    const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
+
+    const paginatedProducts = useMemo(() => {
+        const start = (currentPage - 1) * PAGE_SIZE;
+        const end = start + PAGE_SIZE;
+        return filteredProducts.slice(start, end);
+    }, [filteredProducts, currentPage]);
+
+    const fromItem = totalItems === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+    const toItem = Math.min(currentPage * PAGE_SIZE, totalItems);
+
+    const goPrevPage = () => setCurrentPage((p) => Math.max(1, p - 1));
+    const goNextPage = () => setCurrentPage((p) => Math.min(totalPages, p + 1));
 
     const totalProducts = products.length;
     const featuredCount = products.filter((p) => p.isFeatured).length;
@@ -828,7 +849,7 @@ export default function AdminProductsPage() {
                             No se encontraron productos con esos filtros.
                         </div>
                     ) : (
-                        filteredProducts.map((p) => (
+                        paginatedProducts.map((p) => (
                             <div
                                 key={p.id}
                                 className="grid md:grid-cols-[80px,2.2fr,1fr,1fr,0.6fr,0.8fr,0.9fr]
@@ -986,6 +1007,47 @@ export default function AdminProductsPage() {
                     )}
                 </div>
             </section>
+            {/* Paginación */}
+            {!isLoading && filteredProducts.length > 0 && (
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 text-xs text-slate-500">
+                    <p>
+                        Mostrando{" "}
+                        <span className="font-semibold">
+                            {fromItem}–{toItem}
+                        </span>{" "}
+                        de{" "}
+                        <span className="font-semibold">
+                            {totalItems}
+                        </span>{" "}
+                        productos
+                    </p>
+
+                    <div className="inline-flex items-center gap-2 self-end md:self-auto">
+                        <button
+                            onClick={goPrevPage}
+                            disabled={currentPage === 1}
+                            className="px-3 py-1.5 rounded-full border border-slate-200 bg-white text-[11px] font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50"
+                        >
+                            ◀ Anterior
+                        </button>
+
+                        <span className="text-[11px]">
+                            Página{" "}
+                            <span className="font-semibold">{currentPage}</span>{" "}
+                            de{" "}
+                            <span className="font-semibold">{totalPages}</span>
+                        </span>
+
+                        <button
+                            onClick={goNextPage}
+                            disabled={currentPage === totalPages}
+                            className="px-3 py-1.5 rounded-full border border-slate-200 bg-white text-[11px] font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50"
+                        >
+                            Siguiente ▶
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* MODAL NUEVO / EDITAR PRODUCTO */}
             {isModalOpen && (
