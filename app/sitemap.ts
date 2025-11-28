@@ -5,7 +5,6 @@ import type { MetadataRoute } from "next";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const baseUrl = "https://www.dulcesdetallescartagenaer.com";
 
-    // Slugs de categorías (los mismos que usas en el front)
     const categories = [
         "cumple",
         "aniversario",
@@ -14,38 +13,50 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         "dietetico",
     ];
 
-    // Productos desde la BD
-    const products = await prisma.product.findMany({
-        select: {
-            slug: true,
-            updatedAt: true,
-        },
-    });
-
-    // 👇 OJO: usamos "as const" para que changeFrequency sea un literal y no string
-    const categoryEntries = categories.map<MetadataRoute.Sitemap[number]>((slug) => ({
-        url: `${baseUrl}/categoria/${slug}`,
-        lastModified: new Date(),
-        changeFrequency: "weekly" as const,
-        priority: 0.8,
-    }));
-
-    const productEntries = products.map<MetadataRoute.Sitemap[number]>((p) => ({
-        url: `${baseUrl}/producto/${p.slug}`,
-        lastModified: new Date(p.updatedAt),
-        changeFrequency: "daily" as const,
-        priority: 0.9,
-    }));
-
-    return [
+    // Home y categorías (siempre)
+    const staticEntries: MetadataRoute.Sitemap = [
         {
             url: `${baseUrl}/`,
             lastModified: new Date(),
-            changeFrequency: "daily" as const,
+            changeFrequency: "daily",
             priority: 1.0,
         },
-        ...categoryEntries,
-        ...productEntries,
+        ...categories.map<MetadataRoute.Sitemap[number]>((slug) => ({
+            url: `${baseUrl}/categoria/${slug}`,
+            lastModified: new Date(),
+            changeFrequency: "weekly",
+            priority: 0.8,
+        })),
     ];
+
+    // 👇 Si no hay DATABASE_URL, devolvemos solo lo estático
+    if (!process.env.DATABASE_URL) {
+        console.warn(
+            "[sitemap] DATABASE_URL no está definida. Se genera sitemap solo con home y categorías."
+        );
+        return staticEntries;
+    }
+
+    // 👇 Si SÍ hay DATABASE_URL, intentamos traer productos
+    let productEntries: MetadataRoute.Sitemap[number][] = [];
+
+    try {
+        const products = await prisma.product.findMany({
+            select: {
+                slug: true,
+                updatedAt: true,
+            },
+        });
+
+        productEntries = products.map<MetadataRoute.Sitemap[number]>((p) => ({
+            url: `${baseUrl}/producto/${p.slug}`,
+            lastModified: new Date(p.updatedAt),
+            changeFrequency: "daily",
+            priority: 0.9,
+        }));
+    } catch (err) {
+        console.error("[sitemap] Error cargando productos para el sitemap:", err);
+    }
+
+    return [...staticEntries, ...productEntries];
 }
-// app/sitemap.ts
