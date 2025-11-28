@@ -1,5 +1,5 @@
 // app/api/admin/categories/[id]/route.ts
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 function slugify(value: string) {
@@ -11,13 +11,15 @@ function slugify(value: string) {
         .replace(/(^-|-$)+/g, "");
 }
 
-type RouteParams = {
-    params: { id: string };
+// 👇 tipo que encaja con lo que Next está esperando
+type RouteContext = {
+    params: Promise<{ id: string }>;
 };
 
 // PUT -> actualizar categoría
-export async function PUT(req: Request, { params }: RouteParams) {
-    const { id } = params;
+export async function PUT(req: NextRequest, context: RouteContext) {
+    // 🔑 ahora params es una Promise
+    const { id } = await context.params;
 
     try {
         const body = await req.json();
@@ -61,8 +63,8 @@ export async function PUT(req: Request, { params }: RouteParams) {
 }
 
 // DELETE -> eliminar categoría
-export async function DELETE(_req: Request, { params }: RouteParams) {
-    const { id } = params;
+export async function DELETE(_req: NextRequest, context: RouteContext) {
+    const { id } = await context.params;
 
     try {
         await prisma.category.delete({
