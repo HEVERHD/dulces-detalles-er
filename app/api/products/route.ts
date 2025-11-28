@@ -26,6 +26,39 @@ export async function GET(req: Request) {
     const pageParam = url.searchParams.get("page");
     const limitParam = url.searchParams.get("limit");
 
+    // Helper para enriquecer productos con ventas
+    async function attachSales(products: any[]) {
+        if (products.length === 0) return products;
+
+        const productIds = products.map((p) => p.id as string);
+
+        // 👇 Usamos SOLO quantity, sin monto
+        const salesAgg = await prisma.productSale.groupBy({
+            by: ["productId"],
+            where: {
+                productId: { in: productIds },
+            },
+            _sum: {
+                quantity: true, // nombre que ya usas en el historial
+            },
+        });
+
+        const salesMap: Record<string, { soldCount: number }> = Object.fromEntries(
+            salesAgg.map((row) => [
+                row.productId,
+                { soldCount: row._sum.quantity ?? 0 },
+            ])
+        );
+
+        return products.map((p) => {
+            const sales = salesMap[p.id] ?? { soldCount: 0 };
+            return {
+                ...p,
+                soldCount: sales.soldCount,
+            };
+        });
+    }
+
     // Sin paginación → devolver TODO
     if (!pageParam && !limitParam) {
         const products = await prisma.product.findMany({
@@ -33,7 +66,9 @@ export async function GET(req: Request) {
             orderBy: { createdAt: "desc" },
         });
 
-        return NextResponse.json(products);
+        const enriched = await attachSales(products);
+
+        return NextResponse.json(enriched);
     }
 
     // Con paginación
@@ -51,13 +86,17 @@ export async function GET(req: Request) {
         prisma.product.count(),
     ]);
 
+    const enriched = await attachSales(products);
+
     return NextResponse.json({
-        products,
+        products: enriched,
         total,
         page,
         totalPages: Math.ceil(total / limit),
     });
 }
+
+
 
 // ──────────────────────────────────────────
 // POST → crear producto
@@ -71,12 +110,24 @@ export async function POST(req: Request) {
         where: { slug: dbSlug },
     });
 
+
     if (!category) {
         return NextResponse.json(
             { error: `Categoría '${body.categorySlug}' no encontrada` },
             { status: 400 }
         );
     }
+
+    const stock =
+        typeof body.stock === "number"
+            ? body.stock
+            : Number.isFinite(Number(body.stock))
+                ? Number(body.stock)
+                : 0;
+
+    const trackStock = typeof body.trackStock === "boolean"
+        ? body.trackStock
+        : Boolean(body.trackStock);
 
     const product = await prisma.product.create({
         data: {
@@ -90,10 +141,17 @@ export async function POST(req: Request) {
             isFeatured: body.isFeatured,
             isActive: body.isActive,
             categoryId: category.id,
+
+            // 🆕 nuevos campos
+            stock,
+            trackStock,
+        },
+        include: {
+            category: true,
         },
     });
 
-    return NextResponse.json(product);
+    return NextResponse.json(product, { status: 201 });
 }
 
 // ──────────────────────────────────────────
@@ -102,9 +160,11 @@ export async function POST(req: Request) {
 export async function PUT(req: Request) {
     const body = await req.json();
 
-    if (!body.id) {
+    const { id, categorySlug, ...rest } = body;
+
+    if (!id) {
         return NextResponse.json(
-            { error: "Id de producto requerido" },
+            { error: "ID de producto requerido" },
             { status: 400 }
         );
     }
@@ -115,31 +175,51 @@ export async function PUT(req: Request) {
         where: { slug: dbSlug },
     });
 
+
     if (!category) {
         return NextResponse.json(
-            { error: `Categoría '${body.categorySlug}' no encontrada` },
+            { error: `Categoría '${categorySlug}' no encontrada` },
             { status: 400 }
         );
     }
 
-    const product = await prisma.product.update({
-        where: { id: body.id },
+    const stock =
+        typeof rest.stock === "number"
+            ? rest.stock
+            : Number.isFinite(Number(rest.stock))
+                ? Number(rest.stock)
+                : 0;
+
+    const trackStock = typeof rest.trackStock === "boolean"
+        ? rest.trackStock
+        : Boolean(rest.trackStock);
+
+    const updated = await prisma.product.update({
+        where: { id },
         data: {
-            slug: body.slug,
-            name: body.name,
-            shortDescription: body.shortDescription,
-            description: body.description,
-            price: body.price,
-            tag: body.tag || null,
-            image: body.image,
-            isFeatured: body.isFeatured,
-            isActive: body.isActive,
+            slug: rest.slug,
+            name: rest.name,
+            shortDescription: rest.shortDescription,
+            description: rest.description,
+            price: rest.price,
+            tag: rest.tag || null,
+            image: rest.image,
+            isFeatured: rest.isFeatured,
+            isActive: rest.isActive,
             categoryId: category.id,
+
+            // 🆕
+            stock,
+            trackStock,
+        },
+        include: {
+            category: true,
         },
     });
 
-    return NextResponse.json(product);
+    return NextResponse.json(updated);
 }
+
 
 // ──────────────────────────────────────────
 // DELETE → eliminar producto
