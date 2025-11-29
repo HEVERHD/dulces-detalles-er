@@ -5,16 +5,14 @@ import { useCallback, useState, DragEvent, ChangeEvent } from "react";
 
 type ImageUploaderProps = {
     label?: string;
-    value: string;                 // URL guardada en el formulario
+    value: string;
     onChange: (url: string) => void;
     error?: string;
 };
 
-// 🔹 ENV públicas (asegúrate de tenerlas en .env.local)
 const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!;
 const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!;
 
-// tamaño máximo (ajusta si quieres)
 const MAX_SIZE_MB = 8;
 const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
 
@@ -56,7 +54,6 @@ export default function ImageUploader({
 
     const uploadAndSetUrl = useCallback(
         async (file: File) => {
-            // 🔹 1) Validar tamaño (móvil suele tomar fotos de varios MB)
             if (file.size > MAX_SIZE_BYTES) {
                 alert(
                     `La imagen es muy pesada (${(file.size / 1024 / 1024).toFixed(
@@ -68,7 +65,7 @@ export default function ImageUploader({
 
             if (!CLOUD_NAME || !UPLOAD_PRESET) {
                 console.error(
-                    "Faltan variables NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME o NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET"
+                    "Faltan NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME o NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET"
                 );
                 alert(
                     "Falta configuración de Cloudinary en el servidor. Contacta al administrador."
@@ -92,15 +89,26 @@ export default function ImageUploader({
                 );
 
                 if (!res.ok) {
-                    console.error("❌ Error subiendo imagen a Cloudinary:", await res.text());
-                    alert("No se pudo subir la imagen. Intenta con otra o más liviana.");
+                    let msg = "No se pudo subir la imagen. Intenta con otra o más liviana.";
+
+                    try {
+                        const errJson = await res.json();
+                        console.error("❌ Error Cloudinary:", errJson);
+                        if (errJson?.error?.message) {
+                            msg = `No se pudo subir la imagen: ${errJson.error.message}`;
+                        }
+                    } catch (parseErr) {
+                        const txt = await res.text().catch(() => "");
+                        console.error("❌ Error Cloudinary (texto):", txt);
+                    }
+
+                    alert(msg);
                     return;
                 }
 
                 const data = await res.json();
                 const url = data.secure_url as string;
-
-                onChange(url); // se guarda en form.image
+                onChange(url);
             } catch (err) {
                 console.error("🔥 Error upload:", err);
                 alert("Ocurrió un error subiendo la imagen.");
@@ -117,7 +125,6 @@ export default function ImageUploader({
                 {label} *
             </label>
 
-            {/* Zona de drag & drop / click */}
             <div
                 className={`relative border-2 border-dashed rounded-xl px-4 py-4 text-xs
           ${isDragging
@@ -129,7 +136,6 @@ export default function ImageUploader({
                 onDrop={handleDrop}
             >
                 <div className="flex gap-3 items-center">
-                    {/* Preview */}
                     <div className="w-16 h-16 rounded-lg overflow-hidden bg-slate-200 flex-shrink-0">
                         {value ? (
                             // eslint-disable-next-line @next/next/no-img-element
@@ -174,7 +180,6 @@ export default function ImageUploader({
                 </div>
             </div>
 
-            {/* Campo para URL manual (CDN propio / imagen estática) */}
             <input
                 type="text"
                 placeholder="/images/productos/mi-detalle.jpg o https://..."
