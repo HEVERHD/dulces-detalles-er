@@ -7,10 +7,14 @@ import { CartProvider } from "@/components/CartContext";
 import RootClientShell from "@/components/RootClientShell";
 
 export const metadata: Metadata = {
-  title: "Dulces Detalles ER | Arreglos y regalos personalizados en Cartagena",
+  title: "Dulces Detalles cartagena ER | Arreglos y regalos personalizados en Cartagena",
   description:
     "Arreglos con chocolates, flores, peluches, tazas y detalles personalizados para cumpleaños, aniversarios, novenas y más en Cartagena.",
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
+
 
 export default function RootLayout({
   children,
