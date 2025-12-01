@@ -137,6 +137,23 @@ export default function HomePageClient() {
         window.open(buildWhatsAppUrl(phone, productName), "_blank");
     };
 
+    // ✔ Preguntar disponibilidad por WhatsApp cuando está agotado
+    const handleWhatsAppAvailabilityClick = (productName: string, branch?: Branch) => {
+        if (typeof window === "undefined") return;
+
+        const effectiveBranch: Branch = branch ?? defaultBranch;
+        const phone =
+            effectiveBranch === "supercentro"
+                ? WHATSAPP_SUPERCENTRO
+                : WHATSAPP_OUTLET_BOSQUE;
+
+        const text = `Hola, vengo desde la web de *Dulces Detalles ER* 💖 Quisiera saber cuándo volverá a estar disponible el detalle *${productName}* 🕒`;
+        const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+
+        window.open(url, "_blank");
+    };
+
+
     // ✔ Leer sucursal del storage
     useEffect(() => {
         if (typeof window === "undefined") return;
@@ -638,9 +655,26 @@ export default function HomePageClient() {
                                                                 </>
                                                             ) : (
                                                                 // Vista cuando está agotado
-                                                                <p className="text-[10px] font-semibold text-slate-400">
-                                                                    Producto agotado
-                                                                </p>
+                                                                // Vista cuando está agotado
+                                                                <div className="flex flex-col items-end gap-1">
+                                                                    <p className="text-[10px] font-semibold text-slate-400">
+                                                                        Producto agotado
+                                                                    </p>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleWhatsAppAvailabilityClick(product.name)}
+                                                                        className="
+            inline-flex items-center justify-end gap-1 
+            text-[10px] font-semibold text-green-600 hover:text-green-700
+        "
+                                                                    >
+                                                                        <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-green-500/10">
+                                                                            💬
+                                                                        </span>
+                                                                        <span>Preguntar disponibilidad</span>
+                                                                    </button>
+                                                                </div>
+
                                                             )}
                                                         </div>
                                                     </div>
