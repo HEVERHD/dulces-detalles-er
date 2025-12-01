@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import type { Product } from "@/lib/products";
 
-// Números en formato internacional para WhatsApp (sin +, con 57)
+// Números en formato internacional para WhatsApp (con 57 incluido)
 const WHATSAPP_OUTLET_BOSQUE = "573504737628";
 const WHATSAPP_SUPERCENTRO = "573202304977";
 
@@ -21,8 +21,13 @@ type ProductDetail = Product & {
 };
 
 function buildWhatsAppUrl(phone: string, productName?: string) {
-    const text = `Hola, vengo desde la web de *Dulces Detalles ER* 💖 Me interesa el detalle: *${productName ?? ""
-        }*. ¿Podrían darme más información?`;
+    const text = `Hola, vengo desde la web de *Dulces Detalles ER* 💖 Me interesa el detalle: *${productName ?? ""}*. ¿Podrían darme más información?`;
+    return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+}
+
+// 🆕 texto especial para preguntar disponibilidad
+function buildWhatsAppAvailabilityUrl(phone: string, productName?: string) {
+    const text = `Hola, vengo desde la web de *Dulces Detalles ER* 💖 Quisiera saber cuándo volverá a estar disponible el detalle *${productName ?? ""}* 🕒`;
     return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
 }
 
@@ -43,6 +48,7 @@ export default function ProductPage() {
 
     const [defaultBranch, setDefaultBranch] = useState<Branch>("outlet");
 
+    // 🔁 botón normal de pedir (cuando hay stock)
     const handleWhatsAppClick = () => {
         if (typeof window === "undefined" || !product) return;
 
@@ -52,6 +58,21 @@ export default function ProductPage() {
                 : WHATSAPP_OUTLET_BOSQUE;
 
         window.open(buildWhatsAppUrl(phone, product.name), "_blank");
+    };
+
+    // 🆕 botón para preguntar disponibilidad (cuando está agotado)
+    const handleWhatsAppAvailabilityClick = () => {
+        if (typeof window === "undefined" || !product) return;
+
+        const phone =
+            defaultBranch === "supercentro"
+                ? WHATSAPP_SUPERCENTRO
+                : WHATSAPP_OUTLET_BOSQUE;
+
+        window.open(
+            buildWhatsAppAvailabilityUrl(phone, product.name),
+            "_blank"
+        );
     };
 
     // Leer sucursal guardada
@@ -72,10 +93,14 @@ export default function ProductPage() {
                 setError(null);
 
                 // IMPORTANTE: usamos query ?slug=
-                const res = await fetch(`/api/products/by-slug?slug=${encodeURIComponent(slug)}`);
+                const res = await fetch(
+                    `/api/products/by-slug?slug=${encodeURIComponent(slug)}`
+                );
 
                 if (!res.ok) {
-                    throw new Error(`No se pudo cargar el producto (${res.status})`);
+                    throw new Error(
+                        `No se pudo cargar el producto (${res.status})`
+                    );
                 }
 
                 const data = await res.json();
@@ -122,6 +147,15 @@ export default function ProductPage() {
         );
     }
 
+    // 🆕 lógica de stock (ya con product asegurado)
+    const isTrackingStock = product.trackStock;
+    const stock = product.stock ?? 0;
+    const isOutOfStock = isTrackingStock && stock === 0;
+    const isLowStock = isTrackingStock && !isOutOfStock && stock <= 2;
+
+    const lowStockLabel =
+        stock === 1 ? "¡Última unidad!" : "¡Solo 2 unidades!";
+
     return (
         <div className="pb-24 space-y-6">
             {/* Migas / volver */}
@@ -167,6 +201,20 @@ export default function ProductPage() {
                                 <span>{product.tag}</span>
                             </div>
                         )}
+
+                        {/* 🆕 Badge de stock bajo */}
+                        {isLowStock && (
+                            <div className="absolute bottom-3 left-3 inline-flex items-center gap-2 rounded-full bg-amber-500 text-white text-[11px] px-3 py-1 shadow-md">
+                                ⚠️ {lowStockLabel}
+                            </div>
+                        )}
+
+                        {/* 🆕 Badge de agotado */}
+                        {isOutOfStock && (
+                            <div className="absolute bottom-0 inset-x-0 bg-red-600/90 text-center text-[11px] font-semibold text-white py-1.5">
+                                Agotado temporalmente
+                            </div>
+                        )}
                     </div>
 
                     {/* Info principal */}
@@ -187,21 +235,46 @@ export default function ProductPage() {
 
                         <div className="flex items-end justify-between mt-2">
                             <div>
-                                <p className="text-[11px] text-slate-400">Desde</p>
+                                <p className="text-[11px] text-slate-400">
+                                    Desde
+                                </p>
                                 <p className="text-2xl font-extrabold text-pink-600">
                                     {formatPrice(product.price)}
                                 </p>
+
+                                {/* 🆕 mensajes según stock */}
+                                {isTrackingStock && !isOutOfStock && (
+                                    <p className="text-[11px] text-amber-600 mt-0.5">
+                                        {stock} unidades disponibles
+                                    </p>
+                                )}
+                                {isOutOfStock && (
+                                    <p className="text-[11px] text-slate-500 mt-0.5">
+                                        Sin unidades disponibles por el momento
+                                    </p>
+                                )}
+
                                 <p className="text-[11px] text-slate-400 mt-0.5">
                                     Precio puede variar según personalización ✨
                                 </p>
                             </div>
 
-                            <button
-                                onClick={handleWhatsAppClick}
-                                className="inline-flex items-center gap-2 rounded-full bg-pink-500 hover:bg-pink-600 text-white font-semibold px-4 py-2 text-xs shadow-lg shadow-pink-300/60"
-                            >
-                                💬 Pedir este detalle
-                            </button>
+                            {/* 🔁 CTA cambia según si hay stock o no */}
+                            {isOutOfStock ? (
+                                <button
+                                    onClick={handleWhatsAppAvailabilityClick}
+                                    className="inline-flex items-center gap-2 rounded-full bg-green-500 hover:bg-green-600 text-white font-semibold px-4 py-2 text-xs shadow-lg shadow-green-300/60"
+                                >
+                                    💬 Preguntar disponibilidad
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={handleWhatsAppClick}
+                                    className="inline-flex items-center gap-2 rounded-full bg-pink-500 hover:bg-pink-600 text-white font-semibold px-4 py-2 text-xs shadow-lg shadow-pink-300/60"
+                                >
+                                    💬 Pedir este detalle
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -223,9 +296,18 @@ export default function ProductPage() {
                         Información importante 📌
                     </h3>
                     <ul className="text-[11px] md:text-xs text-slate-600 space-y-1.5 list-disc list-inside">
-                        <li>Las fotos son referencia, podemos ajustar colores y dulces según tu gusto.</li>
-                        <li>Te confirmamos disponibilidad de peluches, globos y chocolates al momento del pedido.</li>
-                        <li>Hacemos entregas a domicilio en Cartagena o puedes recoger en nuestras sucursales.</li>
+                        <li>
+                            Las fotos son referencia, podemos ajustar colores y
+                            dulces según tu gusto.
+                        </li>
+                        <li>
+                            Te confirmamos disponibilidad de peluches, globos y
+                            chocolates al momento del pedido.
+                        </li>
+                        <li>
+                            Hacemos entregas a domicilio en Cartagena o puedes
+                            recoger en nuestras sucursales.
+                        </li>
                     </ul>
                 </div>
             </section>
@@ -241,7 +323,8 @@ export default function ProductPage() {
                             Outlet del Bosque
                         </p>
                         <p className="text-[11px] text-slate-500">
-                            Centro Comercial Outlet del Bosque, frente a la Olímpica.
+                            Centro Comercial Outlet del Bosque, frente a la
+                            Olímpica.
                         </p>
                         <p className="text-[11px] text-slate-700 mt-1">
                             📲 +57 350 473 7628
@@ -264,7 +347,11 @@ export default function ProductPage() {
 
             {/* BOTÓN FLOTANTE WHATSAPP */}
             <button
-                onClick={handleWhatsAppClick}
+                onClick={
+                    isOutOfStock
+                        ? handleWhatsAppAvailabilityClick
+                        : handleWhatsAppClick
+                }
                 className="fixed bottom-6 right-6 rounded-full bg-green-500 hover:bg-green-600 text-white shadow-xl w-14 h-14 flex items-center justify-center text-2xl"
                 aria-label="Abrir WhatsApp para este detalle"
             >

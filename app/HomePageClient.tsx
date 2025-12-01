@@ -7,11 +7,7 @@ import { Product } from "../lib/products";
 import { useCart } from "@/components/CartContext";
 import { useGlobalLoader } from "@/components/providers/LoaderProvider";
 
-
 import Footer from "@/components/Footer";
-
-
-
 
 const CATEGORIES = [
     { id: "cumple", name: "Cumpleaños 🎂", description: "Tortas, cajas sorpresa, globos y más." },
@@ -43,6 +39,10 @@ export default function HomePageClient() {
     const [isLoadingProducts, setIsLoadingProducts] = useState(true);
     const [errorProducts, setErrorProducts] = useState<string | null>(null);
     const { showLoader, hideLoader } = useGlobalLoader();
+    // Orden y filtros avanzados
+    const [sortBy, setSortBy] = useState<"relevance" | "top" | "priceAsc" | "priceDesc">("relevance");
+    const [onlyAvailable, setOnlyAvailable] = useState(false);
+    const [priceFilter, setPriceFilter] = useState<"all" | "low" | "mid" | "high">("all");
 
     // Paginación
     const [page, setPage] = useState(1);
@@ -69,28 +69,62 @@ export default function HomePageClient() {
     }, [totalItems]);
 
     // ✔ Filtro buscador
+    // ✔ Filtro buscador + stock + rango de precios
     const filteredProducts = products.filter((product) => {
         const q = searchQuery.trim().toLowerCase();
-        if (!q) return true;
+        const price = product.price ?? 0;
 
-        return (
-            product.name.toLowerCase().includes(q) ||
-            (product.tag ?? "").toLowerCase().includes(q) ||
-            (product.shortDescription ?? "").toLowerCase().includes(q)
-        );
+        // 1. Buscar por texto
+        if (q) {
+            const matchesText =
+                product.name.toLowerCase().includes(q) ||
+                (product.tag ?? "").toLowerCase().includes(q) ||
+                (product.shortDescription ?? "").toLowerCase().includes(q);
+
+            if (!matchesText) return false;
+        }
+
+        // 2. Solo disponibles (si trackea stock)
+        if (onlyAvailable) {
+            const isTrackingStock = product.trackStock;
+            const stock = product.stock ?? 0;
+            if (isTrackingStock && stock <= 0) return false;
+        }
+
+        // 3. Filtro por rango de precio
+        if (priceFilter === "low" && price > 80000) return false;          // hasta 80k
+        if (priceFilter === "mid" && (price < 80000 || price > 150000)) return false; // 80k - 150k
+        if (priceFilter === "high" && price < 150000) return false;        // +150k
+
+        return true;
     });
 
+
     // Productos ordenados: primero los que tienen ventas
+    // Productos ordenados según sort seleccionado
     const sortedProducts = [...filteredProducts].sort((a, b) => {
         const aSales = (a as any).soldCount ?? 0;
         const bSales = (b as any).soldCount ?? 0;
+        const aPrice = a.price ?? 0;
+        const bPrice = b.price ?? 0;
 
-        // Primero los que tienen más ventas
-        if (bSales !== aSales) return bSales - aSales;
-
-        // Dejar el resto como venían (podrías usar createdAt si lo tienes)
-        return 0;
+        switch (sortBy) {
+            case "top":
+                // Más vendidos primero
+                if (bSales !== aSales) return bSales - aSales;
+                return aPrice - bPrice;
+            case "priceAsc":
+                return aPrice - bPrice;
+            case "priceDesc":
+                return bPrice - aPrice;
+            case "relevance":
+            default:
+                // Igual a como lo tenías: priorizar vendidos pero sin romper orden natural
+                if (bSales !== aSales) return bSales - aSales;
+                return 0;
+        }
     });
+
 
 
     // ✔ Acción WhatsApp
@@ -102,6 +136,23 @@ export default function HomePageClient() {
 
         window.open(buildWhatsAppUrl(phone, productName), "_blank");
     };
+
+    // ✔ Preguntar disponibilidad por WhatsApp cuando está agotado
+    const handleWhatsAppAvailabilityClick = (productName: string, branch?: Branch) => {
+        if (typeof window === "undefined") return;
+
+        const effectiveBranch: Branch = branch ?? defaultBranch;
+        const phone =
+            effectiveBranch === "supercentro"
+                ? WHATSAPP_SUPERCENTRO
+                : WHATSAPP_OUTLET_BOSQUE;
+
+        const text = `Hola, vengo desde la web de *Dulces Detalles ER* 💖 Quisiera saber cuándo volverá a estar disponible el detalle *${productName}* 🕒`;
+        const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+
+        window.open(url, "_blank");
+    };
+
 
     // ✔ Leer sucursal del storage
     useEffect(() => {
@@ -435,16 +486,25 @@ export default function HomePageClient() {
                                         const soldLabel =
                                             soldCount === 1 ? "1 vez pedido" : `${soldCount} veces pedido`;
 
+                                        // 👇 Lógica de stock
+                                        const isTrackingStock = product.trackStock;
+                                        const isOutOfStock = isTrackingStock && product.stock === 0;
+                                        const isLowStock =
+                                            isTrackingStock && !isOutOfStock && product.stock <= 2;
+
+                                        const lowStockLabel =
+                                            product.stock === 1 ? "¡Última unidad!" : "¡Solo 2 unidades!";
+
                                         return (
                                             <article
                                                 key={product.id}
-                                                className="
-                group flex flex-col gap-2 
-                rounded-xl border border-pink-100 p-3 
-                shadow-sm bg-white
-                hover:shadow-md hover:border-pink-300 
-                transition-all duration-200
-              "
+                                                className={`
+        group flex flex-col gap-2 
+        rounded-xl border p-3 shadow-sm bg-white
+        hover:shadow-md hover:border-pink-300 
+        transition-all duration-200
+        ${isOutOfStock ? "border-slate-200 opacity-70" : "border-pink-100"}
+      `}
                                             >
                                                 {/* Imagen compacta */}
                                                 <div className="relative w-full h-32 rounded-lg overflow-hidden bg-white">
@@ -455,15 +515,45 @@ export default function HomePageClient() {
                                                     />
 
                                                     {hasSales && (
-                                                        <div className="
-                      absolute top-1.5 left-1.5 
-                      inline-flex items-center gap-1 rounded-full
-                      bg-black/60 backdrop-blur-sm 
-                      px-2 py-[2px] text-[9px] text-amber-200
-                      shadow-sm border border-amber-400/30
-                    ">
+                                                        <div
+                                                            className="
+              absolute top-1.5 left-1.5 
+              inline-flex items-center gap-1 rounded-full
+              bg-black/60 backdrop-blur-sm 
+              px-2 py-[2px] text-[9px] text-amber-200
+              shadow-sm border border-amber-400/30
+            "
+                                                        >
                                                             <span>✅</span>
                                                             <span className="font-semibold">{soldLabel}</span>
+                                                        </div>
+                                                    )}
+
+                                                    {/* 🧃 Badge de stock bajo */}
+                                                    {isLowStock && (
+                                                        <div
+                                                            className="
+              absolute top-1.5 right-1.5 
+              inline-flex items-center gap-1 rounded-full
+              bg-amber-500/90 px-2 py-[2px]
+              text-[9px] font-semibold text-white shadow-sm
+            "
+                                                        >
+                                                            <span>⚠️</span>
+                                                            <span>{lowStockLabel}</span>
+                                                        </div>
+                                                    )}
+
+                                                    {/* ❌ Badge de agotado */}
+                                                    {isOutOfStock && (
+                                                        <div
+                                                            className="
+              absolute inset-x-0 bottom-0
+              bg-red-600/90 text-[11px] font-semibold
+              text-white text-center py-1
+            "
+                                                        >
+                                                            Agotado temporalmente
                                                         </div>
                                                     )}
                                                 </div>
@@ -474,11 +564,11 @@ export default function HomePageClient() {
                                                         {product.tag && (
                                                             <span
                                                                 className="
-                        inline-flex items-center gap-1 
-                        bg-pink-100/90 text-pink-700 
-                        text-[10px] font-semibold 
-                        px-2 py-[1px] rounded-full mb-1
-                      "
+                inline-flex items-center gap-1 
+                bg-pink-100/90 text-pink-700 
+                text-[10px] font-semibold 
+                px-2 py-[1px] rounded-full mb-1
+              "
                                                             >
                                                                 {badgeIcon} {product.tag}
                                                             </span>
@@ -499,6 +589,18 @@ export default function HomePageClient() {
                                                             <p className="text-sm font-extrabold text-pink-600">
                                                                 {formatPrice(product.price)}
                                                             </p>
+
+                                                            {/* Texto de stock */}
+                                                            {isTrackingStock && !isOutOfStock && (
+                                                                <p className="text-[10px] text-amber-600 mt-0.5">
+                                                                    {product.stock} unidades disponibles
+                                                                </p>
+                                                            )}
+                                                            {isOutOfStock && (
+                                                                <p className="text-[10px] text-slate-500 mt-0.5">
+                                                                    Sin unidades disponibles
+                                                                </p>
+                                                            )}
                                                         </div>
 
                                                         <div className="text-right space-y-1">
@@ -509,50 +611,78 @@ export default function HomePageClient() {
                                                                 Ver detalle
                                                             </Link>
 
-                                                            <button
-                                                                onClick={() =>
-                                                                    handleWhatsAppClick(undefined, product.name)
-                                                                }
-                                                                className="
-                        inline-flex items-center justify-end gap-1 
-                        text-[10px] font-semibold text-green-600 hover:text-green-700
-                      "
-                                                            >
-                                                                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-green-500/10">
-                                                                    <img
-                                                                        src="/images/whatsapp-icon.png"
-                                                                        className="w-2.5 h-2.5"
-                                                                    />
-                                                                </span>
-                                                                <span>Pedir</span>
-                                                            </button>
+                                                            {/* Acciones normales si HAY stock */}
+                                                            {!isOutOfStock ? (
+                                                                <>
+                                                                    <button
+                                                                        onClick={() =>
+                                                                            handleWhatsAppClick(undefined, product.name)
+                                                                        }
+                                                                        className="
+                    inline-flex items-center justify-end gap-1 
+                    text-[10px] font-semibold text-green-600 hover:text-green-700
+                  "
+                                                                    >
+                                                                        <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-green-500/10">
+                                                                            <img
+                                                                                src="/images/whatsapp-icon.png"
+                                                                                className="w-2.5 h-2.5"
+                                                                            />
+                                                                        </span>
+                                                                        <span>Pedir</span>
+                                                                    </button>
 
-                                                            <button
-                                                                onClick={() =>
-                                                                    addItem({
-                                                                        id: product.id,
-                                                                        slug: product.slug,
-                                                                        name: product.name,
-                                                                        price: product.price,
-                                                                        image: product.image,
-                                                                    })
-                                                                }
-                                                                className="
-                        inline-flex items-center justify-end gap-1 
-                        text-[10px] font-semibold text-pink-600 hover:text-pink-700
-                      "
-                                                            >
-                                                                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-pink-100">
-                                                                    🧺
-                                                                </span>
-                                                                <span>Carrito</span>
-                                                            </button>
+                                                                    <button
+                                                                        onClick={() =>
+                                                                            addItem({
+                                                                                id: product.id,
+                                                                                slug: product.slug,
+                                                                                name: product.name,
+                                                                                price: product.price,
+                                                                                image: product.image,
+                                                                            })
+                                                                        }
+                                                                        className="
+                    inline-flex items-center justify-end gap-1 
+                    text-[10px] font-semibold text-pink-600 hover:text-pink-700
+                  "
+                                                                    >
+                                                                        <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-pink-100">
+                                                                            🧺
+                                                                        </span>
+                                                                        <span>Carrito</span>
+                                                                    </button>
+                                                                </>
+                                                            ) : (
+                                                                // Vista cuando está agotado
+                                                                // Vista cuando está agotado
+                                                                <div className="flex flex-col items-end gap-1">
+                                                                    <p className="text-[10px] font-semibold text-slate-400">
+                                                                        Producto agotado
+                                                                    </p>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleWhatsAppAvailabilityClick(product.name)}
+                                                                        className="
+            inline-flex items-center justify-end gap-1 
+            text-[10px] font-semibold text-green-600 hover:text-green-700
+        "
+                                                                    >
+                                                                        <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-green-500/10">
+                                                                            💬
+                                                                        </span>
+                                                                        <span>Preguntar disponibilidad</span>
+                                                                    </button>
+                                                                </div>
+
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
                                             </article>
                                         );
                                     })}
+
                                 </div>
                             )}
 
