@@ -3,6 +3,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useFavorites } from "./FavoritesContext";
 
 const WHATSAPP_MAIN = "573504737638"; // 57 + 3504737638
 
@@ -13,6 +14,8 @@ function buildWhatsAppUrl() {
 }
 
 export default function SiteHeader() {
+    const { totalFavorites } = useFavorites();
+
     const handleWhatsAppClick = () => {
         if (typeof window === "undefined") return;
         window.open(buildWhatsAppUrl(), "_blank");
@@ -60,6 +63,19 @@ export default function SiteHeader() {
                         className="text-slate-600 hover:text-pink-600 transition-colors"
                     >
                         Sucursales
+                    </Link>
+                    <Link
+                        href="/favoritos"
+                        className="relative text-slate-600 hover:text-pink-600 transition-colors"
+                    >
+                        <span className="flex items-center gap-1">
+                            💝 Favoritos
+                            {totalFavorites > 0 && (
+                                <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] text-[10px] font-bold text-white bg-pink-500 rounded-full px-1">
+                                    {totalFavorites}
+                                </span>
+                            )}
+                        </span>
                     </Link>
                 </nav>
 

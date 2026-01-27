@@ -38,8 +38,11 @@ model Product {
   categoryId       String
   category         Category  @relation(fields: [categoryId], references: [id])
 
-  // 🆕 relación con ventas
+  // 🆕 relaciones
   sales            ProductSale[]
+  favorites        Favorite[]
+  reviews          Review[]
+  images           ProductImage[]
 
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
@@ -54,4 +57,101 @@ model ProductSale {
   totalPrice Int      // price * quantity (en COP)
 
   createdAt  DateTime @default(now())
+}
+
+// 🆕 Sistema de favoritos (usa sessionId para usuarios anónimos)
+model Favorite {
+  id        String   @id @default(cuid())
+  sessionId String   // Cookie o localStorage ID del usuario
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([sessionId, productId])
+  @@index([sessionId])
+}
+
+// 🆕 Sistema de reseñas y calificaciones
+model Review {
+  id         String   @id @default(cuid())
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  authorName String
+  rating     Int      // 1-5 estrellas
+  comment    String?
+  isApproved Boolean  @default(false) // moderación
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([productId])
+  @@index([isApproved])
+}
+
+// 🆕 Galería de imágenes adicionales por producto
+model ProductImage {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  url       String
+  order     Int      @default(0) // orden de visualización
+  alt       String?
+
+  createdAt DateTime @default(now())
+
+  @@index([productId])
+}
+
+// 🆕 Sistema de cupones/descuentos
+model Coupon {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  type        String    // "percentage" | "fixed"
+  value       Int       // porcentaje (10 = 10%) o valor fijo en COP
+  minPurchase Int?      // compra mínima para aplicar (opcional)
+  maxUses     Int?      // número máximo de usos (opcional)
+  usedCount   Int       @default(0)
+  isActive    Boolean   @default(true)
+  expiresAt   DateTime?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([code])
+  @@index([isActive])
+}
+
+// 🆕 Suscriptores de email marketing
+model EmailSubscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  isActive  Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+}
+
+// 🆕 Banners del carousel principal
+model Banner {
+  id          String   @id @default(cuid())
+  title       String
+  subtitle    String?
+  description String?
+  imageUrl    String
+  buttonText  String?
+  buttonLink  String?
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([order])
 }

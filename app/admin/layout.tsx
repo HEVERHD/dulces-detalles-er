@@ -106,6 +106,58 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                         📁 Categorías
                     </Link>
 
+                    <Link
+                        href="/admin/cupones"
+                        onClick={closeSidebar}
+                        className={`flex items-center gap-2 px-2 py-1.5 rounded-lg
+                            ${isActive("/admin/cupones")
+                                ? "text-pink-600 bg-pink-50 font-semibold"
+                                : "text-slate-600 hover:bg-slate-100"
+                            }
+                        `}
+                    >
+                        🎟️ Cupones
+                    </Link>
+
+                    <Link
+                        href="/admin/resenas"
+                        onClick={closeSidebar}
+                        className={`flex items-center gap-2 px-2 py-1.5 rounded-lg
+                            ${isActive("/admin/resenas")
+                                ? "text-pink-600 bg-pink-50 font-semibold"
+                                : "text-slate-600 hover:bg-slate-100"
+                            }
+                        `}
+                    >
+                        ⭐ Reseñas
+                    </Link>
+
+                    <Link
+                        href="/admin/suscriptores"
+                        onClick={closeSidebar}
+                        className={`flex items-center gap-2 px-2 py-1.5 rounded-lg
+                            ${isActive("/admin/suscriptores")
+                                ? "text-pink-600 bg-pink-50 font-semibold"
+                                : "text-slate-600 hover:bg-slate-100"
+                            }
+                        `}
+                    >
+                        📬 Suscriptores
+                    </Link>
+
+                    <Link
+                        href="/admin/banners"
+                        onClick={closeSidebar}
+                        className={`flex items-center gap-2 px-2 py-1.5 rounded-lg
+                            ${isActive("/admin/banners")
+                                ? "text-pink-600 bg-pink-50 font-semibold"
+                                : "text-slate-600 hover:bg-slate-100"
+                            }
+                        `}
+                    >
+                        🖼️ Banners del Home
+                    </Link>
+
                     <button
                         disabled
                         className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-slate-500 hover:bg-slate-100 opacity-60 cursor-not-allowed"

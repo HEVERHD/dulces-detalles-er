@@ -10,6 +10,7 @@ import {
 } from "react";
 import type { Product, ProductCategory } from "@/lib/products";
 import ImageUploader from "@/components/admin/ImageUploader";
+import ProductImagesManager from "@/components/admin/ProductImagesManager";
 import { useGlobalLoader } from "@/components/providers/LoaderProvider";
 
 
@@ -825,187 +826,162 @@ export default function AdminProductsPage() {
                 </div>
             </section>
 
-            {/* Tabla / listado */}
-            <section className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-                <div className="hidden md:grid grid-cols-[80px,2fr,1fr,1fr,80px,100px,110px] gap-3 px-4 py-2 text-[11px] font-semibold text-slate-500 border-b border-slate-100 uppercase tracking-wide">
-                    <span>Foto</span>
-                    <span>Producto</span>
-                    <span>Categoría</span>
-                    <span>Etiqueta</span>
-                    <span className="text-center">Stock</span> {/* 🆕 */}
-                    <span className="text-right">Precio</span>
-                    <span className="text-right">Acciones</span>
-                </div>
-
-
-
-                <div className="divide-y divide-slate-100">
-                    {isLoading ? (
-                        <div className="px-4 py-6 text-sm text-slate-500 text-center">
-                            Cargando productos...
-                        </div>
-                    ) : filteredProducts.length === 0 ? (
-                        <div className="px-4 py-6 text-sm text-slate-500 text-center">
-                            No se encontraron productos con esos filtros.
-                        </div>
-                    ) : (
-                        paginatedProducts.map((p) => (
-                            <div
+            {/* Grid de productos con cards premium */}
+            <section>
+                {isLoading ? (
+                    <div className="px-4 py-16 text-center">
+                        <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-pink-600 border-t-transparent"></div>
+                        <p className="mt-4 text-sm font-medium text-slate-600">Cargando productos...</p>
+                    </div>
+                ) : filteredProducts.length === 0 ? (
+                    <div className="px-4 py-16 text-center">
+                        <div className="text-6xl mb-4">📦</div>
+                        <p className="text-base font-medium text-slate-600">
+                            No se encontraron productos
+                        </p>
+                        <p className="text-sm text-slate-400 mt-1">
+                            Prueba con otros filtros o crea un nuevo producto
+                        </p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                        {paginatedProducts.map((p) => (
+                            <article
                                 key={p.id}
-                                className="grid md:grid-cols-[80px,2.2fr,1fr,1fr,0.6fr,0.8fr,0.9fr]
-    gap-3 px-4 py-4 
-    items-start md:items-center
-    hover:bg-pink-50/40 transition-colors"
+                                className="group bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl hover:border-pink-200 transition-all duration-300 overflow-hidden"
                             >
-
-                                {/* Imagen */}
-                                <div className="w-16 h-16 rounded-lg overflow-hidden bg-slate-100">
+                                {/* Imagen del producto */}
+                                <div className="relative aspect-square bg-gradient-to-br from-slate-50 to-slate-100 overflow-hidden">
                                     <img
                                         src={p.image}
                                         alt={p.name}
-                                        className="w-full h-full object-cover"
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                     />
-                                </div>
 
-                                {/* Nombre + descripción corta */}
-                                <div>
-                                    <p className="text-sm font-semibold text-slate-900">
-                                        {p.name}
-                                    </p>
-                                    <p className="text-xs text-slate-500 truncate">
-                                        {p.shortDescription}
-                                    </p>
-                                    <p className="text-[11px] text-slate-400 mt-0.5">
-                                        slug: <span className="font-mono">{p.slug}</span>
-                                    </p>
-
-                                    {/* Estado visible / destacado */}
-                                    <div className="mt-1 flex flex-wrap gap-1">
+                                    {/* Badges flotantes */}
+                                    <div className="absolute top-3 left-3 flex flex-col gap-2">
                                         {!p.isActive && (
-                                            <span className="inline-flex items-center rounded-full bg-slate-200 text-slate-600 text-[10px] px-2 py-[2px]">
-                                                Oculto
+                                            <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900/90 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-1.5 shadow-lg">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+                                                OCULTO
                                             </span>
                                         )}
                                         {p.isFeatured && (
-                                            <span className="inline-flex items-center rounded-full bg-amber-100 text-amber-700 text-[10px] px-2 py-[2px]">
-                                                ⭐ Destacado
+                                            <span className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500/95 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-1.5 shadow-lg">
+                                                ⭐ DESTACADO
                                             </span>
                                         )}
                                     </div>
-                                </div>
 
-                                {/* Categoría */}
-                                {/* Categoría */}
-                                <div className="text-xs text-slate-600">
-                                    {(() => {
-                                        const cat = (p as any).category;
-                                        return cat?.name ?? "Sin categoría";
-                                    })()}
-                                </div>
-
-
-
-                                {/* Tag */}
-                                <div>
-                                    {p.tag ? (
-                                        <span className="inline-flex items-center rounded-full bg-pink-100 text-pink-700 text-[11px] font-semibold px-2 py-0.5">
-                                            {p.tag}
-                                        </span>
-                                    ) : (
-                                        <span className="text-[11px] text-slate-400">
-                                            Sin etiqueta
-                                        </span>
-                                    )}
-                                </div>
-
-                                {/* Stock */}
-                                {/* Stock */}
-                                <div className="text-center text-xs text-slate-700">
-                                    {p.trackStock ? (
-                                        <div className="inline-flex flex-col items-center gap-1">
+                                    {/* Stock badge */}
+                                    {p.trackStock && (
+                                        <div className="absolute top-3 right-3">
                                             <span
-                                                className={`inline-flex items-center rounded-full px-2 py-[2px] text-[11px] font-semibold
-          ${p.stock === 0
-                                                        ? "bg-rose-100 text-rose-700"
+                                                className={`inline-flex items-center gap-1.5 rounded-lg backdrop-blur-sm text-[10px] font-bold px-2.5 py-1.5 shadow-lg
+                                                    ${p.stock === 0
+                                                        ? "bg-red-500/95 text-white"
                                                         : p.stock <= 3
-                                                            ? "bg-amber-100 text-amber-700"
-                                                            : "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                                                            ? "bg-amber-500/95 text-white"
+                                                            : "bg-emerald-500/95 text-white"
                                                     }
-        `}
+                                                `}
                                             >
-                                                {p.stock === 0
-                                                    ? "Agotado"
-                                                    : p.stock <= 3
-                                                        ? `Stock bajo (${p.stock})`
-                                                        : `${p.stock} disponibles`}
-                                            </span>
-
-                                            <span className="text-[10px] text-slate-400">
-                                                Stock controlado
-                                            </span>
-                                        </div>
-                                    ) : (
-                                        <div className="inline-flex flex-col items-center gap-1">
-                                            <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-500 text-[10px] px-2 py-[2px]">
-                                                Sin control
-                                            </span>
-                                            <span className="text-[10px] text-slate-400">
-                                                No descuenta inventario
+                                                <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
+                                                {p.stock === 0 ? "AGOTADO" : `${p.stock} UNIIDADES`}
                                             </span>
                                         </div>
                                     )}
                                 </div>
 
+                                {/* Contenido de la card */}
+                                <div className="p-4">
+                                    {/* Título y categoría */}
+                                    <div className="mb-3">
+                                        <h3 className="text-sm font-bold text-slate-900 line-clamp-1 mb-1">
+                                            {p.name}
+                                        </h3>
+                                        <p className="text-xs text-slate-500 line-clamp-2 mb-2">
+                                            {p.shortDescription}
+                                        </p>
 
+                                        <div className="flex items-center gap-2">
+                                            <span className="inline-flex items-center rounded-md bg-slate-100 text-slate-600 text-[10px] font-semibold px-2 py-1">
+                                                {(() => {
+                                                    const cat = (p as any).category;
+                                                    return cat?.name ?? "Sin categoría";
+                                                })()}
+                                            </span>
 
-                                {/* Precio */}
-                                <div className="text-right text-sm font-semibold text-pink-600">
-                                    {p.price.toLocaleString("es-CO", {
-                                        style: "currency",
-                                        currency: "COP",
-                                        maximumFractionDigits: 0,
-                                    })}
+                                            {p.tag && (
+                                                <span className="inline-flex items-center rounded-md bg-pink-100 text-pink-700 text-[10px] font-semibold px-2 py-1">
+                                                    {p.tag}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Precio */}
+                                    <div className="mb-4 pb-4 border-b border-slate-100">
+                                        <p className="text-2xl font-black text-pink-600">
+                                            {p.price.toLocaleString("es-CO", {
+                                                style: "currency",
+                                                currency: "COP",
+                                                maximumFractionDigits: 0,
+                                            })}
+                                        </p>
+                                    </div>
+
+                                    {/* Botones de acción */}
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => openSalesModal(p)}
+                                            className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-sky-50 text-sky-700 text-[11px] font-bold border border-sky-200 hover:bg-sky-100 transition-colors"
+                                        >
+                                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                            </svg>
+                                            Ventas
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRegisterSale(p)}
+                                            className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-50 text-emerald-700 text-[11px] font-bold border border-emerald-200 hover:bg-emerald-100 transition-colors"
+                                        >
+                                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                                            </svg>
+                                            Vender
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => openEditModal(p)}
+                                            className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-slate-100 text-slate-700 text-[11px] font-bold border border-slate-200 hover:bg-slate-200 transition-colors"
+                                        >
+                                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                            </svg>
+                                            Editar
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDelete(p.id)}
+                                            className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-red-50 text-red-600 text-[11px] font-bold border border-red-200 hover:bg-red-100 transition-colors"
+                                        >
+                                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                            Eliminar
+                                        </button>
+                                    </div>
                                 </div>
-
-                                {/* Acciones */}
-                                <div className="flex md:justify-end gap-2 text-xs">
-                                    <button
-                                        type="button"
-                                        onClick={() => openSalesModal(p)}
-                                        className="px-3 py-1 rounded-full border border-sky-100 text-sky-700 hover:bg-sky-50"
-                                    >
-                                        Ver ventas
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRegisterSale(p)}
-                                        className="px-3 py-1 rounded-full border border-emerald-100 text-emerald-700 hover:bg-emerald-50"
-                                    >
-                                        Registrar venta
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => openEditModal(p)}
-                                        className="px-3 py-1 rounded-full border border-slate-200 text-slate-700 hover:bg-slate-50"
-                                    >
-                                        Editar
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => handleDelete(p.id)}
-                                        className="px-3 py-1 rounded-full border border-red-100 text-red-600 hover:bg-red-50"
-                                    >
-                                        Eliminar
-                                    </button>
-                                </div>
-
-
-                            </div>
-                        ))
-                    )}
-                </div>
+                            </article>
+                        ))}
+                    </div>
+                )}
             </section>
             {/* Paginación */}
             {!isLoading && filteredProducts.length > 0 && (
@@ -1290,7 +1266,7 @@ export default function AdminProductsPage() {
                                 )}
                             </div>
 
-                            {/* Imagen */}
+                            {/* Imagen principal */}
                             <ImageUploader
                                 value={form.image}
                                 onChange={(url) =>
@@ -1301,6 +1277,13 @@ export default function AdminProductsPage() {
                                 }
                                 error={errors.image}
                             />
+
+                            {/* Galería de imágenes adicionales */}
+                            {editingProductId && (
+                                <div className="border-t border-slate-200 pt-4">
+                                    <ProductImagesManager productId={editingProductId} />
+                                </div>
+                            )}
 
                             {/* Checks */}
                             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
