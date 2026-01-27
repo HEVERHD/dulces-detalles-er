@@ -5,9 +5,11 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Product } from "../lib/products";
 import { useCart } from "@/components/CartContext";
+import { useFavorites } from "@/components/FavoritesContext";
 import { useGlobalLoader } from "@/components/providers/LoaderProvider";
 
 import Footer from "@/components/Footer";
+import HeroCarousel from "@/components/HeroCarousel";
 
 const CATEGORIES = [
     { id: "cumple", name: "Cumpleaños 🎂", description: "Tortas, cajas sorpresa, globos y más." },
@@ -52,6 +54,9 @@ export default function HomePageClient() {
     // 🧺 Carrito
     const { addItem, totalItems } = useCart();
     const [animateCart, setAnimateCart] = useState(false);
+
+    // 💝 Favoritos
+    const { addFavorite, removeFavorite, isFavorite } = useFavorites();
 
     // Sucursal default
     const [defaultBranch, setDefaultBranch] = useState<Branch>("outlet");
@@ -266,119 +271,8 @@ export default function HomePageClient() {
                     </p>
                 </div>
 
-                {/* HERO NAVIDEÑO */}
-                <section className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-emerald-900 via-red-800 to-rose-700 px-4 py-8 md:px-8 md:py-10 shadow-lg">
-                    <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20">
-                        <div className="inline-flex items-center gap-2 rounded-full bg-white/95 px-4 py-1 shadow-md border border-emerald-100">
-                            <span className="text-sm">🎄</span>
-                            <p className="text-[11px] md:text-xs font-semibold text-emerald-800">
-                                Especial Navidad · Detalles listos para regalar
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="pointer-events-none absolute inset-0">
-                        <div className="absolute -top-16 -right-10 w-40 h-40 bg-emerald-500/40 rounded-full blur-3xl" />
-                        <div className="absolute -bottom-16 -left-10 w-48 h-48 bg-red-500/40 rounded-full blur-3xl" />
-                        <div className="absolute top-10 left-6 w-16 h-16 border border-white/50 rounded-full opacity-70" />
-                        <div className="absolute bottom-10 right-10 w-10 h-10 border border-white/40 rounded-full opacity-60" />
-                    </div>
-
-                    <div className="relative grid gap-8 md:grid-cols-2 md:items-center">
-                        {/* Imagen navideña */}
-                        <div className="order-1 md:order-2 flex justify-center">
-                            <div className="relative w-full max-w-xs md:max-w-sm">
-                                <div className="absolute -top-4 -left-2 z-20 flex items-center gap-1 rounded-full bg-white/90 px-3 py-1 shadow-md border border-red-100">
-                                    <span className="text-xs font-semibold text-red-600">
-                                        Edición limitada
-                                    </span>
-                                    <span className="text-sm">🎁</span>
-                                </div>
-
-                                <div className="overflow-hidden rounded-3xl border border-white/70 bg-white/70 shadow-2xl backdrop-blur-sm">
-                                    <img
-                                        src="/images/products/navidad.png"
-                                        alt="Arreglo navideño de Dulces Detalles ER"
-                                        className="h-60 w-full object-cover md:h-72"
-                                    />
-                                </div>
-
-                                <div className="absolute -bottom-4 right-3 rounded-2xl bg-white/95 px-3 py-1.5 text-[10px] shadow-md flex items-center gap-2 border border-emerald-100">
-                                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-[13px]">
-                                        ⭐
-                                    </span>
-                                    <div className="leading-tight">
-                                        <p className="font-semibold text-slate-800">
-                                            Combos navideños listos
-                                        </p>
-                                        <p className="text-[9px] text-slate-500">
-                                            Dulces, peluches y decoración 🎅
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Texto navideño */}
-                        <div className="order-2 md:order-1 space-y-4 text-white">
-                            <p className="inline-flex items-center rounded-full bg-white/15 text-emerald-50 text-[11px] font-semibold px-3 py-1 border border-emerald-300/40">
-                                ✨ Navidad dulce en Cartagena
-                            </p>
-
-                            <h1 className="text-2xl md:text-3xl lg:text-4xl font-extrabold leading-tight drop-shadow-sm">
-                                Esta Navidad
-                                <span className="block text-amber-300 mt-0.5">
-                                    regala momentos que se quedan en el corazón 💛
-                                </span>
-                            </h1>
-
-                            <p className="text-sm md:text-base text-emerald-50/90 max-w-md">
-                                Arreglos navideños con chocolates, galletas, peluches, tazas, luces
-                                y detalles personalizados para sorprender en novenas, intercambios,
-                                amigos secretos y cenas familiares.
-                            </p>
-
-                            <div className="flex flex-wrap gap-3">
-                                <button
-                                    onClick={() => handleWhatsAppClick()}
-                                    className="inline-flex items-center gap-2 rounded-full bg-amber-300 hover:bg-amber-200 text-emerald-900 font-semibold px-6 py-2.5 shadow-lg shadow-amber-900/30 text-sm"
-                                >
-                                    🎄 Pedir combo navideño
-                                </button>
-
-                                <a
-                                    href="#categorias"
-                                    className="inline-flex items-center gap-2 rounded-full border border-emerald-200/80 bg-white/10 text-emerald-50 hover:bg-white/15 px-5 py-2.5 text-xs md:text-sm font-semibold"
-                                >
-                                    Ver todos los detalles
-                                </a>
-                            </div>
-
-                            <ul className="text-[11px] md:text-xs text-emerald-50/90 space-y-1.5">
-                                <li className="flex items-center gap-2">
-                                    <span className="h-4 w-4 rounded-full bg-emerald-100/90 flex items-center justify-center text-[10px] text-emerald-900">
-                                        🎁
-                                    </span>
-                                    Combos listos para personalizar con tu mensaje
-                                </li>
-
-                                <li className="flex items-center gap-2">
-                                    <span className="h-4 w-4 rounded-full bg-emerald-100/90 flex items-center justify-center text-[10px] text-emerald-900">
-                                        🚚
-                                    </span>
-                                    Entregas a domicilio en Cartagena
-                                </li>
-
-                                <li className="flex items-center gap-2">
-                                    <span className="h-4 w-4 rounded-full bg-emerald-100/90 flex items-center justify-center text-[10px] text-emerald-900">
-                                        ⭐
-                                    </span>
-                                    Arreglos para empresas e intercambios
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </section>
+                {/* CAROUSEL DE BANNERS */}
+                <HeroCarousel />
 
                 {/* LISTADO + BUSCADOR */}
                 <section className="relative">
@@ -513,6 +407,37 @@ export default function HomePageClient() {
                                                         alt={product.name}
                                                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                                                     />
+
+                                                    {/* Botón de favorito */}
+                                                    <button
+                                                        onClick={() => {
+                                                            if (isFavorite(product.id)) {
+                                                                removeFavorite(product.id);
+                                                            } else {
+                                                                addFavorite({
+                                                                    id: product.id,
+                                                                    slug: product.slug,
+                                                                    name: product.name,
+                                                                    price: product.price,
+                                                                    image: product.image,
+                                                                    shortDescription: product.shortDescription,
+                                                                });
+                                                            }
+                                                        }}
+                                                        className="
+                                                            absolute top-2 right-2 z-10
+                                                            w-7 h-7 rounded-full bg-white/90 backdrop-blur-sm
+                                                            shadow-md hover:shadow-lg
+                                                            flex items-center justify-center
+                                                            transition-all duration-200
+                                                            hover:scale-110
+                                                        "
+                                                        title={isFavorite(product.id) ? "Quitar de favoritos" : "Agregar a favoritos"}
+                                                    >
+                                                        <span className={`text-base transition-all ${isFavorite(product.id) ? 'text-red-500' : 'text-slate-400'}`}>
+                                                            {isFavorite(product.id) ? '❤️' : '🤍'}
+                                                        </span>
+                                                    </button>
 
                                                     {hasSales && (
                                                         <div

@@ -4,6 +4,7 @@ import "./globals.css";
 
 import { LoaderProvider } from "@/components/providers/LoaderProvider";
 import { CartProvider } from "@/components/CartContext";
+import { FavoritesProvider } from "@/components/FavoritesContext";
 import RootClientShell from "@/components/RootClientShell";
 
 export const metadata: Metadata = {
@@ -24,10 +25,12 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className="bg-pink-50 antialiased">
-        {/* Providers globales (para useGlobalLoader y useCart) */}
+        {/* Providers globales */}
         <LoaderProvider>
           <CartProvider>
-            <RootClientShell>{children}</RootClientShell>
+            <FavoritesProvider>
+              <RootClientShell>{children}</RootClientShell>
+            </FavoritesProvider>
           </CartProvider>
         </LoaderProvider>
       </body>

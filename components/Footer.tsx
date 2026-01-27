@@ -2,13 +2,20 @@
 "use client";
 
 import Link from "next/link";
+import NewsletterSignup from "./NewsletterSignup";
 
 const Footer = () => {
     const year = new Date().getFullYear();
 
     return (
         <footer className="mt-10 border-t border-slate-100 bg-white/90">
-            <div className="max-w-6xl mx-auto px-4 py-5 flex flex-col md:flex-row items-center justify-between gap-2 text-[11px] md:text-xs text-slate-500">
+            {/* Newsletter signup */}
+            <div className="max-w-6xl mx-auto px-4 pt-8 pb-6">
+                <NewsletterSignup />
+            </div>
+
+            {/* Copyright */}
+            <div className="max-w-6xl mx-auto px-4 pb-5 flex flex-col md:flex-row items-center justify-between gap-2 text-[11px] md:text-xs text-slate-500 border-t border-slate-100 pt-5">
                 <p>
                     © {year} <span className="font-semibold text-pink-600">Dulces Detalles ER</span>.{" "}
                     Todos los derechos reservados.

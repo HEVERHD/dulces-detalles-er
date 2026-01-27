@@ -4,6 +4,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import type { Product } from "@/lib/products";
+import ProductReviews from "@/components/ProductReviews";
+import ProductImageGallery from "@/components/ProductImageGallery";
 
 // Números en formato internacional para WhatsApp (con 57 incluido)
 const WHATSAPP_OUTLET_BOSQUE = "573504737628";
@@ -184,34 +186,35 @@ export default function ProductPage() {
                         <div className="absolute -bottom-12 -left-10 w-40 h-40 bg-rose-200/60 rounded-full blur-3xl" />
                     </div>
 
-                    {/* Imagen */}
-                    <div className="relative">
-                        <img
-                            src={product.image}
-                            alt={product.name}
-                            className="w-full h-72 object-cover md:h-80"
+                    {/* Galería de imágenes */}
+                    <div className="relative p-4">
+                        <ProductImageGallery
+                            productId={product.id}
+                            mainImage={product.image}
+                            productName={product.name}
                         />
-                        {/* Badge superior */}
-                        <div className="absolute top-3 left-3 inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-[11px] font-semibold text-pink-700 shadow-sm">
+
+                        {/* Badges flotantes sobre la galería */}
+                        <div className="absolute top-7 left-7 inline-flex items-center gap-2 rounded-full bg-white/90 backdrop-blur-sm px-3 py-1 text-[11px] font-semibold text-pink-700 shadow-md">
                             🎁 Detalle personalizado
                         </div>
 
                         {product.tag && (
-                            <div className="absolute top-3 right-3 inline-flex items-center gap-2 rounded-full bg-pink-600 text-white text-[11px] px-3 py-1 shadow-md">
+                            <div className="absolute top-7 right-7 inline-flex items-center gap-2 rounded-full bg-pink-600 text-white text-[11px] px-3 py-1 shadow-md">
                                 <span>{product.tag}</span>
                             </div>
                         )}
 
-                        {/* 🆕 Badge de stock bajo */}
+                        {/* Badge de stock bajo */}
                         {isLowStock && (
-                            <div className="absolute bottom-3 left-3 inline-flex items-center gap-2 rounded-full bg-amber-500 text-white text-[11px] px-3 py-1 shadow-md">
+                            <div className="absolute bottom-7 left-7 inline-flex items-center gap-2 rounded-full bg-amber-500 text-white text-[11px] px-3 py-1 shadow-md z-10">
                                 ⚠️ {lowStockLabel}
                             </div>
                         )}
 
-                        {/* 🆕 Badge de agotado */}
+                        {/* Badge de agotado */}
                         {isOutOfStock && (
-                            <div className="absolute bottom-0 inset-x-0 bg-red-600/90 text-center text-[11px] font-semibold text-white py-1.5">
+                            <div className="absolute bottom-7 left-7 right-7 bg-red-600/90 text-center text-[11px] font-semibold text-white py-2 rounded-lg shadow-lg z-10">
                                 Agotado temporalmente
                             </div>
                         )}
@@ -310,6 +313,14 @@ export default function ProductPage() {
                         </li>
                     </ul>
                 </div>
+            </section>
+
+            {/* RESEÑAS Y CALIFICACIONES */}
+            <section className="px-4">
+                <ProductReviews
+                    productId={product.id}
+                    productName={product.name}
+                />
             </section>
 
             {/* SUCURSALES RESUMEN */}

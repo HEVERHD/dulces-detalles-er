@@ -2,6 +2,7 @@
 "use client";
 
 import { useCart } from "@/components/CartContext";
+import CouponInput from "@/components/CouponInput";
 import { useEffect, useState } from "react";
 
 
@@ -17,6 +18,14 @@ function getBranchLabel(branch: Branch) {
         : "Supercentro Los Ejecutivos";
 }
 
+interface AppliedCoupon {
+    id: string;
+    code: string;
+    type: string;
+    value: number;
+    discountAmount: number;
+}
+
 export default function CartPage() {
     const {
         items,
@@ -28,6 +37,12 @@ export default function CartPage() {
     } = useCart();
 
     const [branch, setBranch] = useState<Branch>("outlet");
+    const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
+
+    // Calcular total final con descuento
+    const finalTotal = appliedCoupon
+        ? Math.max(0, totalAmount - appliedCoupon.discountAmount)
+        : totalAmount;
 
     useEffect(() => {
         if (typeof window === "undefined") return;
@@ -44,7 +59,7 @@ export default function CartPage() {
             maximumFractionDigits: 0,
         });
 
-    const handleSendWhatsAppOrder = () => {
+    const handleSendWhatsAppOrder = async () => {
         if (typeof window === "undefined" || items.length === 0) return;
 
         const phone =
@@ -59,16 +74,36 @@ export default function CartPage() {
                 )} c/u) = ${formatPrice(it.price * it.quantity)}`
         );
 
+        // Construir info de descuento si hay cupón aplicado
+        const discountInfo = appliedCoupon
+            ? `\n💚 Cupón aplicado: *${appliedCoupon.code}*\nDescuento: *${formatPrice(appliedCoupon.discountAmount)}*\n`
+            : "";
+
         const text = `Hola, vengo desde la web de *Dulces Detalles ER* 💖
 
 Quiero hacer este pedido:
 
 ${lines.join("\n")}
 
-Total aproximado: *${formatPrice(totalAmount)}*
+Subtotal: *${formatPrice(totalAmount)}*${discountInfo}
+Total aproximado: *${formatPrice(finalTotal)}*
 Sucursal: *${getBranchLabel(branch)}*
 
 ¿Me ayudan a confirmar disponibilidad y formas de pago?`;
+
+        // Si hay un cupón aplicado, incrementar su contador de uso
+        if (appliedCoupon) {
+            try {
+                await fetch("/api/coupons/use", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ couponId: appliedCoupon.id }),
+                });
+            } catch (error) {
+                console.error("Error al registrar uso del cupón:", error);
+                // Continuar con el pedido aunque falle el registro
+            }
+        }
 
         const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
         window.open(url, "_blank");
@@ -158,13 +193,40 @@ Sucursal: *${getBranchLabel(branch)}*
                 ))}
             </div>
 
+            {/* Cupón de descuento */}
+            <div className="mt-4">
+                <CouponInput
+                    cartTotal={totalAmount}
+                    onCouponApplied={setAppliedCoupon}
+                    onCouponRemoved={() => setAppliedCoupon(null)}
+                    appliedCoupon={appliedCoupon}
+                />
+            </div>
+
             <div className="mt-2 rounded-2xl border border-pink-100 bg-pink-50/70 p-4 space-y-2">
                 <div className="flex items-center justify-between text-sm">
-                    <span className="font-semibold text-slate-700">Total aproximado:</span>
-                    <span className="font-extrabold text-pink-700">
+                    <span className="text-slate-600">Subtotal:</span>
+                    <span className="font-semibold text-slate-800">
                         {formatPrice(totalAmount)}
                     </span>
                 </div>
+
+                {appliedCoupon && (
+                    <div className="flex items-center justify-between text-sm">
+                        <span className="text-green-600">Descuento:</span>
+                        <span className="font-semibold text-green-600">
+                            -{formatPrice(appliedCoupon.discountAmount)}
+                        </span>
+                    </div>
+                )}
+
+                <div className="border-t border-pink-200 pt-2 flex items-center justify-between">
+                    <span className="font-semibold text-slate-700">Total aproximado:</span>
+                    <span className="font-extrabold text-pink-700 text-lg">
+                        {formatPrice(finalTotal)}
+                    </span>
+                </div>
+
                 <p className="text-[11px] text-slate-500">
                     El valor final puede variar según personalización y disponibilidad de
                     productos. Te confirmamos todo por WhatsApp.

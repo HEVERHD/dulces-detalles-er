@@ -5,8 +5,10 @@ import { useCallback, useState, DragEvent, ChangeEvent } from "react";
 
 type ImageUploaderProps = {
     label?: string;
-    value: string;
-    onChange: (url: string) => void;
+    value?: string;
+    onChange?: (url: string) => void;
+    onImageUploaded?: (url: string) => void; // Alternativa para uso sin value controlado
+    currentImageUrl?: string; // Para vista previa sin control
     error?: string;
 };
 
@@ -18,12 +20,17 @@ const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
 
 export default function ImageUploader({
     label = "Imagen del producto",
-    value,
+    value = "",
     onChange,
+    onImageUploaded,
+    currentImageUrl = "",
     error,
 }: ImageUploaderProps) {
     const [isDragging, setIsDragging] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
+
+    // Usar value si está disponible, sino currentImageUrl
+    const displayImage = value || currentImageUrl;
 
     const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
         e.preventDefault();
@@ -108,7 +115,12 @@ export default function ImageUploader({
 
                 const data = await res.json();
                 const url = data.secure_url as string;
-                onChange(url);
+
+                // Llamar a onChange si existe (modo controlado)
+                onChange?.(url);
+
+                // Llamar a onImageUploaded si existe (modo alternativo)
+                onImageUploaded?.(url);
             } catch (err) {
                 console.error("🔥 Error upload:", err);
                 alert("Ocurrió un error subiendo la imagen.");
@@ -116,7 +128,7 @@ export default function ImageUploader({
                 setIsUploading(false);
             }
         },
-        [onChange]
+        [onChange, onImageUploaded]
     );
 
     return (
@@ -137,10 +149,10 @@ export default function ImageUploader({
             >
                 <div className="flex gap-3 items-center">
                     <div className="w-16 h-16 rounded-lg overflow-hidden bg-slate-200 flex-shrink-0">
-                        {value ? (
+                        {displayImage ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
-                                src={value}
+                                src={displayImage}
                                 alt="Preview"
                                 className="w-full h-full object-cover"
                             />
@@ -184,7 +196,7 @@ export default function ImageUploader({
                 type="text"
                 placeholder="/images/productos/mi-detalle.jpg o https://..."
                 value={value}
-                onChange={(e) => onChange(e.target.value)}
+                onChange={(e) => onChange?.(e.target.value)}
                 className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 outline-none focus:ring-2 focus:ring-pink-300 focus:border-pink-400 text-xs"
             />
 
