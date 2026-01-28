@@ -601,14 +601,22 @@ body {
 /* Toggle de tema animado - colores de marca */
 .theme-toggle {
   position: relative;
-  width: 56px;
-  height: 28px;
+  width: 44px;
+  height: 24px;
   border-radius: 999px;
   background: linear-gradient(135deg, var(--brand-gold) 0%, var(--brand-orange) 100%);
   cursor: pointer;
   transition: all 0.3s ease;
   border: none;
   padding: 0;
+  flex-shrink: 0;
+}
+
+@media (min-width: 640px) {
+  .theme-toggle {
+    width: 56px;
+    height: 28px;
+  }
 }
 
 .dark .theme-toggle {
@@ -620,35 +628,66 @@ body {
   position: absolute;
   top: 2px;
   left: 2px;
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background: white;
   transition: transform 0.3s ease;
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
 
+@media (min-width: 640px) {
+  .theme-toggle::before {
+    width: 24px;
+    height: 24px;
+  }
+}
+
 .dark .theme-toggle::before {
-  transform: translateX(28px);
+  transform: translateX(20px);
   background: #fdf2f8;
+}
+
+@media (min-width: 640px) {
+  .dark .theme-toggle::before {
+    transform: translateX(28px);
+  }
 }
 
 .theme-toggle-icon {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 14px;
+  font-size: 11px;
   transition: opacity 0.2s ease;
 }
 
+@media (min-width: 640px) {
+  .theme-toggle-icon {
+    font-size: 14px;
+  }
+}
+
 .theme-toggle .sun-icon {
-  left: 8px;
+  left: 6px;
   opacity: 1;
 }
 
+@media (min-width: 640px) {
+  .theme-toggle .sun-icon {
+    left: 8px;
+  }
+}
+
 .theme-toggle .moon-icon {
-  right: 8px;
+  right: 6px;
   opacity: 0;
+}
+
+@media (min-width: 640px) {
+  .theme-toggle .moon-icon {
+    right: 8px;
+  }
 }
 
 .dark .theme-toggle .sun-icon {
