@@ -1,6 +1,161 @@
 @import "tailwindcss";
 
-/* --- Animación Bounce --- */
+/* ===== COLORES DE MARCA - DULCES DETALLES ER ===== */
+/* Extraídos del logo oficial */
+:root {
+  /* === COLORES PRIMARIOS DE MARCA === */
+  /* Rosa principal del logo "Dulces Detalles" */
+  --brand-pink: #ec4899;
+  --brand-pink-light: #f9a8d4;
+  --brand-pink-dark: #db2777;
+  --brand-pink-deep: #9d174d;
+
+  /* Magenta/Fucsia del contorno del logo */
+  --brand-magenta: #e11d74;
+  --brand-magenta-light: #f472b6;
+
+  /* === COLORES SECUNDARIOS DE MARCA === */
+  /* Celeste/Cyan de "Cartagena" y copos de nieve */
+  --brand-cyan: #67e8f9;
+  --brand-cyan-light: #a5f3fc;
+  --brand-cyan-dark: #22d3ee;
+
+  /* Gris azulado del slogan "Un mundo divertido de sabores" */
+  --brand-slate: #94a3b8;
+  --brand-slate-light: #cbd5e1;
+
+  /* === COLORES DE ACENTO (dulces del logo) === */
+  /* Dorado/Amarillo - regalos y detalles */
+  --brand-gold: #fbbf24;
+  --brand-gold-light: #fde68a;
+  --brand-gold-dark: #f59e0b;
+
+  /* Naranja - dulces y decoraciones */
+  --brand-orange: #f97316;
+  --brand-orange-light: #fdba74;
+
+  /* Verde - dulces y hojas */
+  --brand-green: #22c55e;
+  --brand-green-light: #86efac;
+
+  /* Rojo - bastón de caramelo */
+  --brand-red: #ef4444;
+  --brand-red-light: #fca5a5;
+
+  /* Café/Chocolate */
+  --brand-chocolate: #92400e;
+  --brand-chocolate-light: #d97706;
+
+  /* === VARIABLES DE TEMA - MODO CLARO === */
+  --bg-primary: #fffbfe;
+  --bg-secondary: #fdf2f8;
+  --bg-tertiary: #fce7f3;
+  --bg-card: rgba(255, 255, 255, 0.9);
+  --bg-card-solid: #ffffff;
+  --bg-card-hover: #fff5f9;
+
+  --text-primary: #1e293b;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --text-accent: var(--brand-pink);
+
+  --border-color: rgba(236, 72, 153, 0.15);
+  --border-subtle: #fce7f3;
+  --border-strong: var(--brand-pink-light);
+
+  /* Gradientes de marca */
+  --gradient-brand: linear-gradient(135deg, var(--brand-pink) 0%, var(--brand-magenta) 50%, var(--brand-pink-dark) 100%);
+  --gradient-candy: linear-gradient(135deg, var(--brand-pink) 0%, var(--brand-cyan) 100%);
+  --gradient-gold: linear-gradient(135deg, var(--brand-gold) 0%, var(--brand-orange) 100%);
+}
+
+.dark {
+  /* === VARIABLES DE TEMA - MODO OSCURO === */
+  /* Fondos oscuros con tinte rosado sutil */
+  --bg-primary: #0c0809;
+  --bg-secondary: #150f12;
+  --bg-tertiary: #1f161a;
+  --bg-card: rgba(31, 22, 26, 0.95);
+  --bg-card-solid: #1f161a;
+  --bg-card-hover: #2a1f24;
+
+  /* Textos claros que contrastan bien */
+  --text-primary: #fdf2f8;
+  --text-secondary: #f9a8d4;
+  --text-muted: #a78b95;
+  --text-accent: var(--brand-magenta-light);
+
+  /* Bordes con brillo rosado sutil */
+  --border-color: rgba(236, 72, 153, 0.25);
+  --border-subtle: rgba(236, 72, 153, 0.12);
+  --border-strong: rgba(244, 114, 182, 0.4);
+
+  /* Gradientes adaptados para dark mode */
+  --gradient-brand: linear-gradient(135deg, var(--brand-magenta-light) 0%, var(--brand-pink) 50%, var(--brand-cyan-dark) 100%);
+  --gradient-candy: linear-gradient(135deg, var(--brand-magenta-light) 0%, var(--brand-cyan) 100%);
+  --gradient-gold: linear-gradient(135deg, var(--brand-gold-light) 0%, var(--brand-gold) 100%);
+}
+
+/* ===== FUENTES ===== */
+body {
+  font-family: var(--font-inter), system-ui, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.dark body {
+  background: linear-gradient(135deg,
+    var(--bg-primary) 0%,
+    var(--bg-secondary) 50%,
+    var(--bg-primary) 100%
+  );
+}
+
+/* ===== UTILIDADES DE MARCA ===== */
+.text-brand {
+  color: var(--brand-pink);
+}
+
+.dark .text-brand {
+  color: var(--brand-magenta-light);
+}
+
+.text-brand-cyan {
+  color: var(--brand-cyan-dark);
+}
+
+.dark .text-brand-cyan {
+  color: var(--brand-cyan);
+}
+
+.bg-brand {
+  background: var(--gradient-brand);
+}
+
+.bg-brand-solid {
+  background-color: var(--brand-pink);
+}
+
+.dark .bg-brand-solid {
+  background-color: var(--brand-magenta-light);
+}
+
+.border-brand {
+  border-color: var(--brand-pink);
+}
+
+.dark .border-brand {
+  border-color: var(--brand-magenta-light);
+}
+
+.font-display {
+  font-family: var(--font-playfair), Georgia, serif;
+}
+
+/* ===== ANIMACIONES PREMIUM ===== */
+
+/* Bounce del carrito */
 .cart-bounce {
   animation: cartBounce 0.6s ease;
 }
@@ -19,7 +174,769 @@
 }
 
 @keyframes cartGlow {
-  0% { box-shadow: 0 0 0px rgba(236, 72, 153, 0); }  /* pink-500 */
+  0% { box-shadow: 0 0 0px rgba(236, 72, 153, 0); }
   50% { box-shadow: 0 0 18px rgba(236, 72, 153, 0.7); }
   100% { box-shadow: 0 0 0px rgba(236, 72, 153, 0); }
+}
+
+/* Fade in desde abajo */
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Fade in simple */
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Slide in desde izquierda */
+.animate-slide-in-left {
+  animation: slideInLeft 0.6s ease-out forwards;
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Slide in desde derecha */
+.animate-slide-in-right {
+  animation: slideInRight 0.6s ease-out forwards;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Pulse suave */
+.animate-pulse-soft {
+  animation: pulseSoft 2s ease-in-out infinite;
+}
+
+@keyframes pulseSoft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Float suave */
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+/* Shimmer/Brillo */
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Gradiente animado para hero */
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradientMove 8s ease infinite;
+}
+
+@keyframes gradientMove {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Scale on hover */
+.hover-scale {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hover-scale:hover {
+  transform: scale(1.02);
+}
+
+/* Card premium con glassmorphism */
+.glass-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.dark .glass-card {
+  background: rgba(30, 20, 25, 0.85);
+  border: 1px solid rgba(236, 72, 153, 0.2);
+}
+
+.glass-card-dark {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Sombra premium */
+.shadow-premium {
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.05),
+    0 10px 15px -3px rgba(0, 0, 0, 0.08),
+    0 20px 25px -5px rgba(0, 0, 0, 0.05);
+}
+
+.dark .shadow-premium {
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.3),
+    0 10px 15px -3px rgba(0, 0, 0, 0.4),
+    0 20px 25px -5px rgba(236, 72, 153, 0.1);
+}
+
+.shadow-premium-lg {
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.08),
+    0 20px 30px -5px rgba(0, 0, 0, 0.1),
+    0 30px 40px -10px rgba(0, 0, 0, 0.08);
+}
+
+.dark .shadow-premium-lg {
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.4),
+    0 20px 30px -5px rgba(0, 0, 0, 0.5),
+    0 30px 40px -10px rgba(236, 72, 153, 0.15);
+}
+
+/* Hover con elevación - brillo de marca */
+.hover-lift {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 10px 20px -5px rgba(236, 72, 153, 0.2),
+    0 20px 30px -10px rgba(236, 72, 153, 0.12),
+    0 0 0 1px rgba(236, 72, 153, 0.05);
+}
+
+.dark .hover-lift:hover {
+  box-shadow:
+    0 10px 20px -5px rgba(244, 114, 182, 0.35),
+    0 20px 30px -10px rgba(244, 114, 182, 0.25),
+    0 0 40px -10px rgba(103, 232, 249, 0.15);
+}
+
+/* Botón premium con efecto */
+.btn-premium {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.btn-premium::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  transition: left 0.5s ease;
+}
+
+.btn-premium:hover::before {
+  left: 100%;
+}
+
+/* Texto con gradiente - usando colores de marca */
+.text-gradient {
+  background: linear-gradient(135deg, var(--brand-pink) 0%, var(--brand-magenta-light) 50%, var(--brand-pink-light) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.dark .text-gradient {
+  background: linear-gradient(135deg, var(--brand-magenta-light) 0%, var(--brand-pink-light) 50%, var(--brand-cyan) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-gold {
+  background: linear-gradient(135deg, var(--brand-gold) 0%, var(--brand-gold-dark) 50%, var(--brand-orange) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.dark .text-gradient-gold {
+  background: linear-gradient(135deg, var(--brand-gold-light) 0%, var(--brand-gold) 50%, var(--brand-gold-dark) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Gradiente tipo caramelo (rosa-cyan del logo) */
+.text-gradient-candy {
+  background: var(--gradient-candy);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Bordes con gradiente - colores de marca */
+.border-gradient {
+  position: relative;
+  border: none;
+}
+
+.border-gradient::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 2px;
+  background: linear-gradient(135deg, var(--brand-pink), var(--brand-magenta-light), var(--brand-gold));
+  border-radius: inherit;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: xor;
+  -webkit-mask-composite: xor;
+}
+
+.dark .border-gradient::before {
+  background: linear-gradient(135deg, var(--brand-magenta-light), var(--brand-cyan), var(--brand-gold-light));
+}
+
+/* Decoración de puntos - colores de marca */
+.dots-pattern {
+  background-image: radial-gradient(rgba(236, 72, 153, 0.15) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.dark .dots-pattern {
+  background-image: radial-gradient(rgba(244, 114, 182, 0.12) 1px, transparent 1px);
+}
+
+/* Línea decorativa - colores de marca */
+.line-decoration {
+  position: relative;
+}
+
+.line-decoration::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  width: 60px;
+  height: 3px;
+  background: linear-gradient(90deg, var(--brand-pink), var(--brand-gold));
+  border-radius: 9999px;
+}
+
+.dark .line-decoration::after {
+  background: linear-gradient(90deg, var(--brand-magenta-light), var(--brand-cyan));
+}
+
+/* Scrollbar premium - colores de marca */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--brand-pink-light), var(--brand-pink));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--brand-magenta-light), var(--brand-pink-dark));
+}
+
+/* Selección de texto - colores de marca */
+::selection {
+  background: rgba(236, 72, 153, 0.3);
+  color: var(--brand-pink-deep);
+}
+
+.dark ::selection {
+  background: rgba(244, 114, 182, 0.35);
+  color: var(--text-primary);
+}
+
+/* Stagger para animaciones en lista */
+.stagger-1 { animation-delay: 0.1s; }
+.stagger-2 { animation-delay: 0.2s; }
+.stagger-3 { animation-delay: 0.3s; }
+.stagger-4 { animation-delay: 0.4s; }
+.stagger-5 { animation-delay: 0.5s; }
+.stagger-6 { animation-delay: 0.6s; }
+
+/* ===== DARK MODE UTILITIES ===== */
+
+/* Cards y fondos */
+.dark .bg-white {
+  background-color: var(--bg-card-solid);
+}
+
+.dark .bg-slate-100 {
+  background-color: rgba(30, 20, 25, 0.6);
+}
+
+.dark .bg-pink-50,
+.dark .bg-rose-50,
+.dark .from-pink-50,
+.dark .from-rose-50 {
+  background-color: rgba(236, 72, 153, 0.1);
+}
+
+.dark .bg-pink-100,
+.dark .bg-rose-100 {
+  background-color: rgba(236, 72, 153, 0.15);
+}
+
+/* Textos */
+.dark .text-slate-900,
+.dark .text-slate-800 {
+  color: #fdf2f8;
+}
+
+.dark .text-slate-700,
+.dark .text-slate-600 {
+  color: #f9a8d4;
+}
+
+.dark .text-slate-500,
+.dark .text-slate-400 {
+  color: #9d7a8a;
+}
+
+/* Bordes */
+.dark .border-pink-100,
+.dark .border-pink-200,
+.dark .border-rose-100 {
+  border-color: rgba(236, 72, 153, 0.2);
+}
+
+.dark .border-slate-200,
+.dark .border-slate-100 {
+  border-color: rgba(236, 72, 153, 0.15);
+}
+
+/* Inputs */
+.dark input,
+.dark textarea,
+.dark select {
+  background-color: rgba(30, 20, 25, 0.8);
+  border-color: rgba(236, 72, 153, 0.2);
+  color: #fdf2f8;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #9d7a8a;
+}
+
+.dark input:focus,
+.dark textarea:focus,
+.dark select:focus {
+  border-color: #ec4899;
+  box-shadow: 0 0 0 2px rgba(236, 72, 153, 0.2);
+}
+
+/* Transición suave para todos los elementos */
+* {
+  transition-property: background-color, border-color;
+  transition-duration: 0.2s;
+  transition-timing-function: ease;
+}
+
+/* Toggle de tema animado - colores de marca */
+.theme-toggle {
+  position: relative;
+  width: 56px;
+  height: 28px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--brand-gold) 0%, var(--brand-orange) 100%);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+  padding: 0;
+}
+
+.dark .theme-toggle {
+  background: linear-gradient(135deg, var(--brand-pink-deep) 0%, var(--brand-magenta) 100%);
+}
+
+.theme-toggle::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: white;
+  transition: transform 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.dark .theme-toggle::before {
+  transform: translateX(28px);
+  background: #fdf2f8;
+}
+
+.theme-toggle-icon {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  transition: opacity 0.2s ease;
+}
+
+.theme-toggle .sun-icon {
+  left: 8px;
+  opacity: 1;
+}
+
+.theme-toggle .moon-icon {
+  right: 8px;
+  opacity: 0;
+}
+
+.dark .theme-toggle .sun-icon {
+  opacity: 0;
+}
+
+.dark .theme-toggle .moon-icon {
+  opacity: 1;
+}
+
+/* ===== EFECTOS PREMIUM DE CELEBRACION ===== */
+
+/* Confetti cayendo */
+@keyframes confettiFall {
+  0% {
+    transform: translateY(0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  25% {
+    transform: translateY(25vh) rotate(180deg) scale(1.1);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(50vh) rotate(360deg) scale(0.9);
+    opacity: 0.8;
+  }
+  75% {
+    transform: translateY(75vh) rotate(540deg) scale(0.7);
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg) scale(0.5);
+    opacity: 0;
+  }
+}
+
+.animate-confetti-fall {
+  animation: confettiFall 2s ease-out forwards;
+}
+
+/* Corazon latiendo */
+@keyframes heartBeat {
+  0% { transform: scale(1); }
+  15% { transform: scale(1.3); }
+  30% { transform: scale(1); }
+  45% { transform: scale(1.2); }
+  60% { transform: scale(1); }
+  100% { transform: scale(1); }
+}
+
+.animate-heart-beat {
+  animation: heartBeat 0.8s ease-in-out;
+}
+
+/* Corazon explotando al agregar favorito */
+@keyframes heartExplode {
+  0% {
+    transform: scale(1);
+  }
+  20% {
+    transform: scale(0.8);
+  }
+  40% {
+    transform: scale(1.4);
+  }
+  60% {
+    transform: scale(1.1);
+  }
+  80% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-heart-explode {
+  animation: heartExplode 0.5s cubic-bezier(0.17, 0.89, 0.32, 1.49);
+}
+
+/* ===== EFECTO RIPPLE (MATERIAL DESIGN) ===== */
+.btn-ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-ripple::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.4) 10%, transparent 10.01%);
+  background-repeat: no-repeat;
+  background-position: 50%;
+  transform: scale(10, 10);
+  opacity: 0;
+  transition: transform 0.5s, opacity 0.8s;
+}
+
+.btn-ripple:active::after {
+  transform: scale(0, 0);
+  opacity: 0.5;
+  transition: 0s;
+}
+
+/* Ripple rosa para botones de marca */
+.btn-ripple-pink::after {
+  background-image: radial-gradient(circle, rgba(236, 72, 153, 0.4) 10%, transparent 10.01%);
+}
+
+/* ===== EFECTO 3D TILT EN CARDS ===== */
+.card-3d {
+  transform-style: preserve-3d;
+  perspective: 1000px;
+  transition: transform 0.3s ease;
+}
+
+.card-3d:hover {
+  transform: perspective(1000px) rotateX(var(--rotate-x, 0deg)) rotateY(var(--rotate-y, 0deg));
+}
+
+.card-3d-content {
+  transform: translateZ(20px);
+  transition: transform 0.3s ease;
+}
+
+.card-3d:hover .card-3d-content {
+  transform: translateZ(40px);
+}
+
+/* Brillo 3D que sigue el mouse */
+.card-3d-shine {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    var(--shine-angle, 135deg),
+    transparent 0%,
+    rgba(255, 255, 255, 0.1) 40%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0.1) 60%,
+    transparent 100%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  border-radius: inherit;
+}
+
+.card-3d:hover .card-3d-shine {
+  opacity: 1;
+}
+
+/* ===== EXPLOSION DE DULCES EN HOVER ===== */
+@keyframes candyBurst {
+  0% {
+    transform: scale(0) rotate(0deg);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2) rotate(180deg);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(0) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+.candy-burst-particle {
+  position: absolute;
+  pointer-events: none;
+  animation: candyBurst 0.6s ease-out forwards;
+}
+
+/* ===== GLOW PULSANTE ===== */
+@keyframes glowPulse {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(236, 72, 153, 0.3),
+                0 0 10px rgba(236, 72, 153, 0.2),
+                0 0 15px rgba(236, 72, 153, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 10px rgba(236, 72, 153, 0.5),
+                0 0 20px rgba(236, 72, 153, 0.3),
+                0 0 30px rgba(236, 72, 153, 0.2);
+  }
+}
+
+.animate-glow-pulse {
+  animation: glowPulse 2s ease-in-out infinite;
+}
+
+/* ===== BADGE ANIMADO "NUEVO" ===== */
+@keyframes badgeShine {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.badge-animated {
+  background: linear-gradient(
+    90deg,
+    var(--brand-pink) 0%,
+    var(--brand-magenta-light) 25%,
+    var(--brand-pink) 50%,
+    var(--brand-magenta-light) 75%,
+    var(--brand-pink) 100%
+  );
+  background-size: 200% auto;
+  animation: badgeShine 3s linear infinite;
+}
+
+/* ===== CONTADOR ANIMADO ===== */
+@keyframes countUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-count-up {
+  animation: countUp 0.5s ease-out forwards;
+}
+
+/* ===== SPARKLE/DESTELLO ===== */
+@keyframes sparkle {
+  0%, 100% {
+    opacity: 0;
+    transform: scale(0) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1) rotate(180deg);
+  }
+}
+
+.animate-sparkle {
+  animation: sparkle 1.5s ease-in-out infinite;
+}
+
+/* ===== FLOATING ICONS ===== */
+@keyframes floatUpDown {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-8px) rotate(3deg);
+  }
+  75% {
+    transform: translateY(4px) rotate(-3deg);
+  }
+}
+
+.animate-float-icon {
+  animation: floatUpDown 3s ease-in-out infinite;
+}
+
+/* ===== SHAKE PARA ERRORES O ALERTAS ===== */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+/* ===== BOUNCE SUAVE ===== */
+@keyframes bounceSoft {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.animate-bounce-soft {
+  animation: bounceSoft 1s ease-in-out infinite;
 }
