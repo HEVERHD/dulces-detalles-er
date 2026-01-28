@@ -8,36 +8,24 @@ import {
     ChangeEvent,
     FormEvent,
 } from "react";
-import type { Product, ProductCategory } from "@/lib/products";
+import type { Product } from "@/lib/products";
 import ImageUploader from "@/components/admin/ImageUploader";
 import ProductImagesManager from "@/components/admin/ProductImagesManager";
 import { useGlobalLoader } from "@/components/providers/LoaderProvider";
 
 
-// 👇 mapear slug de BD -> categoría corta del front
-const DB_TO_APP_CATEGORY: Record<string, ProductCategory> = {
-    cumpleanos: "cumple",
-    aniversarios: "aniversario",
-    declaraciones: "declaracion",
-    infantil: "infantil",
-    dietetico: "dietetico",
-};
-
-// Lee la categoría de un Product que puede venir como string u objeto { slug, name... }
-function getCategoryKeyFromProduct(p: Product): ProductCategory | undefined {
+// Lee el slug de categoría de un Product
+function getCategorySlugFromProduct(p: Product): string | undefined {
     const cat: any = (p as any).category;
 
     if (!cat) return undefined;
 
     // Por si en algún lugar llega como string (legacy)
     if (typeof cat === "string") {
-        return cat as ProductCategory;
+        return cat;
     }
 
-    const dbSlug: string | undefined = cat.slug;
-    if (!dbSlug) return undefined;
-
-    return DB_TO_APP_CATEGORY[dbSlug] ?? (dbSlug as ProductCategory);
+    return cat.slug;
 }
 
 // Etiquetas predefinidas para los badges
@@ -55,7 +43,7 @@ type NewProductForm = {
     name: string;
     slug: string;
     price: string;
-    category: ProductCategory | "";
+    category: string;  // slug de la categoría de BD
     shortDescription: string;
     description: string;
     image: string;
@@ -110,7 +98,7 @@ export default function AdminProductsPage() {
     // 🔹 filtros
     const [search, setSearch] = useState("");
     const [categoryFilter, setCategoryFilter] =
-        useState<ProductCategory | "all">("all");
+        useState<string>("all");
     const [statusFilter, setStatusFilter] =
         useState<"all" | "active" | "inactive">("all");
     const [currentPage, setCurrentPage] = useState(1);
@@ -246,9 +234,9 @@ export default function AdminProductsPage() {
                 p.name.toLowerCase().includes(search.toLowerCase()) ||
                 p.shortDescription.toLowerCase().includes(search.toLowerCase());
 
-            const categoryKey = getCategoryKeyFromProduct(p);
+            const categorySlug = getCategorySlugFromProduct(p);
             const matchCategory =
-                categoryFilter === "all" || categoryKey === categoryFilter;
+                categoryFilter === "all" || categorySlug === categoryFilter;
 
             const matchStatus =
                 statusFilter === "all"
@@ -376,13 +364,13 @@ export default function AdminProductsPage() {
     };
 
     const openEditModal = (product: Product) => {
-        const categoryKey = getCategoryKeyFromProduct(product);
+        const categorySlug = getCategorySlugFromProduct(product);
 
         setForm({
             name: product.name,
             slug: product.slug,
             price: product.price.toLocaleString("es-CO"),
-            category: categoryKey ?? "",
+            category: categorySlug ?? "",
             tag: (product.tag as any) ?? "",
             shortDescription: product.shortDescription,
             description: product.description,
@@ -757,15 +745,13 @@ export default function AdminProductsPage() {
                     {/* filtro por categoría */}
                     <select
                         value={categoryFilter}
-                        onChange={(e) =>
-                            setCategoryFilter(e.target.value as ProductCategory | "all")
-                        }
+                        onChange={(e) => setCategoryFilter(e.target.value)}
                         className="rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-pink-300 focus:border-pink-400"
                     >
                         <option value="all">Todas las categorías</option>
 
                         {backendCategories.map((cat) => (
-                            <option key={cat.id} value={DB_TO_APP_CATEGORY[cat.slug]}>
+                            <option key={cat.id} value={cat.slug}>
                                 {cat.name}
                             </option>
                         ))}
@@ -1147,7 +1133,7 @@ export default function AdminProductsPage() {
                                         {backendCategories.map((cat) => (
                                             <option
                                                 key={cat.id}
-                                                value={DB_TO_APP_CATEGORY[cat.slug]}
+                                                value={cat.slug}
                                             >
                                                 {cat.name}
                                             </option>
