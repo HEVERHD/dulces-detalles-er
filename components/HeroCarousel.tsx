@@ -43,7 +43,7 @@ export default function HeroCarousel() {
 
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % banners.length);
-    }, 5000); // Cambia cada 5 segundos
+    }, 5000);
 
     return () => clearInterval(interval);
   }, [banners.length]);
@@ -58,82 +58,133 @@ export default function HeroCarousel() {
 
   if (isLoading) {
     return (
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-pink-600 via-rose-500 to-fuchsia-600 px-4 py-16 shadow-lg">
+      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-pink-600 via-rose-500 to-fuchsia-600 animate-gradient px-4 py-16 shadow-premium-lg">
         <div className="text-center text-white">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-white border-t-transparent"></div>
-          <p className="mt-3 text-sm">Cargando...</p>
+          <p className="mt-3 text-sm font-medium">Cargando...</p>
         </div>
       </section>
     );
   }
 
   if (banners.length === 0) {
-    // Si no hay banners, mostrar el banner por defecto (el que ya estaba)
+    // Banner por defecto premium
     return (
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-pink-600 via-rose-500 to-fuchsia-600 px-4 py-8 md:px-8 md:py-10 shadow-lg">
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white/95 px-4 py-1 shadow-md border border-pink-100">
-            <span className="text-sm">💝</span>
-            <p className="text-[11px] md:text-xs font-semibold text-pink-800">
-              Detalles únicos · Hechos con amor
+      <section className="relative overflow-hidden rounded-3xl shadow-premium-lg">
+        {/* Fondo con gradiente animado */}
+        <div className="absolute inset-0 bg-gradient-to-br from-pink-600 via-rose-500 to-fuchsia-600 animate-gradient"></div>
+
+        {/* Patrón de puntos decorativo */}
+        <div className="absolute inset-0 dots-pattern opacity-30"></div>
+
+        {/* Elementos decorativos flotantes */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -top-20 -right-20 w-64 h-64 bg-pink-400/30 rounded-full blur-3xl animate-float"></div>
+          <div className="absolute -bottom-20 -left-20 w-72 h-72 bg-fuchsia-500/30 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }}></div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-rose-400/20 rounded-full blur-3xl"></div>
+        </div>
+
+        {/* Badge superior */}
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20">
+          <div className="glass-card inline-flex items-center gap-2 rounded-full px-4 py-1.5 shadow-lg animate-fade-in-up">
+            <span className="text-lg">💝</span>
+            <p className="text-xs font-semibold text-pink-800">
+              Detalles con amor en Cartagena
             </p>
           </div>
         </div>
 
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute -top-16 -right-10 w-40 h-40 bg-pink-400/40 rounded-full blur-3xl" />
-          <div className="absolute -bottom-16 -left-10 w-48 h-48 bg-fuchsia-500/40 rounded-full blur-3xl" />
-        </div>
+        <div className="relative px-6 py-12 md:px-10 md:py-16">
+          <div className="grid gap-10 md:grid-cols-2 md:items-center max-w-6xl mx-auto">
+            {/* Imagen */}
+            <div className="order-1 md:order-2 flex justify-center animate-slide-in-right">
+              <div className="relative w-full max-w-sm">
+                {/* Badge flotante */}
+                <div className="absolute -top-3 -left-3 z-20 glass-card flex items-center gap-2 rounded-full px-4 py-2 shadow-lg animate-float">
+                  <span className="text-amber-500 text-lg">&#9733;</span>
+                  <span className="text-xs font-bold text-slate-800">Favorito de clientes</span>
+                </div>
 
-        <div className="relative grid gap-8 md:grid-cols-2 md:items-center">
-          <div className="order-1 md:order-2 flex justify-center">
-            <div className="relative w-full max-w-xs md:max-w-sm">
-              <div className="absolute -top-4 -left-2 z-20 flex items-center gap-1 rounded-full bg-white/90 px-3 py-1 shadow-md border border-pink-100">
-                <span className="text-xs font-semibold text-pink-600">Más populares</span>
-                <span className="text-sm">🌟</span>
-              </div>
+                {/* Contenedor de imagen con efecto */}
+                <div className="relative group">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-pink-400 via-rose-400 to-amber-400 rounded-3xl blur opacity-40 group-hover:opacity-60 transition-opacity"></div>
+                  <div className="relative overflow-hidden rounded-3xl bg-white/90 shadow-2xl">
+                    <img
+                      src="/images/products/navidad.png"
+                      alt="Arreglos personalizados"
+                      className="h-64 w-full object-cover md:h-80 transition-transform duration-500 group-hover:scale-105"
+                    />
+                  </div>
+                </div>
 
-              <div className="overflow-hidden rounded-3xl border border-white/70 bg-white/70 shadow-2xl backdrop-blur-sm">
-                <img
-                  src="/images/products/navidad.png"
-                  alt="Arreglos personalizados"
-                  className="h-60 w-full object-cover md:h-72"
-                />
-              </div>
-
-              <div className="absolute -bottom-4 right-3 rounded-2xl bg-white/95 px-3 py-1.5 text-[10px] shadow-md flex items-center gap-2 border border-pink-100">
-                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-pink-100 text-[13px]">
-                  ⭐
-                </span>
-                <div className="leading-tight">
-                  <p className="font-semibold text-slate-800">Arreglos personalizados</p>
-                  <p className="text-[9px] text-slate-500">Dulces, peluches, flores y más 🎀</p>
+                {/* Badge inferior */}
+                <div className="absolute -bottom-4 right-4 glass-card rounded-2xl px-4 py-2 shadow-lg animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+                  <div className="flex items-center gap-3">
+                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-pink-500 to-rose-500 text-white text-lg shadow-md">
+                      &#127873;
+                    </span>
+                    <div className="leading-tight">
+                      <p className="font-bold text-slate-800 text-sm">+500 detalles</p>
+                      <p className="text-[11px] text-slate-500">entregados con amor</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <div className="order-2 md:order-1 space-y-4 text-white">
-            <p className="inline-flex items-center rounded-full bg-white/15 text-pink-50 text-[11px] font-semibold px-3 py-1 border border-pink-300/40">
-              ✨ Detalles con amor en Cartagena
-            </p>
+            {/* Contenido de texto */}
+            <div className="order-2 md:order-1 space-y-6 text-white animate-slide-in-left">
+              <div className="inline-flex items-center gap-2 rounded-full bg-white/15 backdrop-blur-sm text-pink-50 text-xs font-semibold px-4 py-2 border border-white/20">
+                <span className="animate-pulse-soft">&#10024;</span>
+                <span>El regalo perfecto existe</span>
+              </div>
 
-            <h1 className="text-2xl md:text-3xl lg:text-4xl font-extrabold leading-tight drop-shadow-sm">
-              Regalos que crean
-              <span className="block text-amber-300 mt-0.5">momentos inolvidables 💛</span>
-            </h1>
+              <h1 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold leading-tight">
+                Regalos que crean
+                <span className="block text-gradient-gold mt-1">momentos inolvidables</span>
+              </h1>
 
-            <p className="text-sm md:text-base text-pink-50/90 max-w-md">
-              Arreglos únicos con chocolates, flores, peluches, tazas y detalles personalizados para cumpleaños, aniversarios, declaraciones y toda ocasión especial que quieras celebrar.
-            </p>
+              <p className="text-base md:text-lg text-pink-50/90 max-w-lg leading-relaxed">
+                Arreglos personalizados con chocolates, flores, peluches y detalles
+                para cada ocasión especial. Hacemos realidad tus ideas.
+              </p>
 
-            <div className="flex flex-wrap gap-3">
-              <a
-                href="#productos"
-                className="inline-flex items-center gap-2 rounded-full bg-amber-300 hover:bg-amber-200 text-pink-900 font-semibold px-6 py-2.5 shadow-lg shadow-amber-900/30 text-sm"
-              >
-                💝 Ver detalles
-              </a>
+              {/* Características */}
+              <div className="flex flex-wrap gap-3 pt-2">
+                {[
+                  { icon: '&#127873;', text: 'Personalizado' },
+                  { icon: '&#128666;', text: 'Envío rápido' },
+                  { icon: '&#128156;', text: 'Hecho con amor' },
+                ].map((item, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-3 py-1.5 text-xs font-medium border border-white/10"
+                  >
+                    <span dangerouslySetInnerHTML={{ __html: item.icon }}></span>
+                    <span>{item.text}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* CTA Buttons */}
+              <div className="flex flex-wrap gap-4 pt-4">
+                <a
+                  href="#productos"
+                  className="btn-premium inline-flex items-center gap-2 rounded-full bg-white text-pink-600 font-bold px-7 py-3.5 shadow-lg hover:shadow-xl hover:bg-pink-50 transition-all text-sm"
+                >
+                  <span>&#128142;</span>
+                  <span>Ver detalles</span>
+                </a>
+                <a
+                  href="https://wa.me/573504737638?text=Hola,%20vengo%20desde%20la%20web%20de%20Dulces%20Detalles%20ER"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-full bg-green-500 hover:bg-green-600 text-white font-bold px-7 py-3.5 shadow-lg transition-all text-sm"
+                >
+                  <span>&#128172;</span>
+                  <span>WhatsApp</span>
+                </a>
+              </div>
             </div>
           </div>
         </div>
@@ -144,67 +195,70 @@ export default function HeroCarousel() {
   const currentBanner = banners[currentIndex];
 
   return (
-    <section className="relative overflow-hidden rounded-3xl shadow-lg group">
-      {/* Imagen de fondo */}
-      <div className="relative aspect-[16/7] md:aspect-[21/9] bg-gradient-to-b from-slate-900 to-slate-800">
+    <section className="relative overflow-hidden shadow-premium-lg group">
+      {/* Imagen de fondo con overlay premium */}
+      <div className="relative aspect-[16/7] md:aspect-[21/9] bg-slate-900">
         <img
           src={currentBanner.imageUrl}
           alt={currentBanner.title}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
         />
 
-        {/* Overlay oscuro para mejor legibilidad del texto */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-transparent"></div>
+        {/* Overlay con gradiente mejorado */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
 
         {/* Contenido del banner */}
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full max-w-6xl mx-auto px-6 md:px-8">
-            <div className="max-w-xl space-y-4">
+          <div className="w-full max-w-6xl mx-auto px-6 md:px-10">
+            <div className="max-w-xl space-y-5 animate-fade-in-up">
               {/* Badge superior */}
-              <div className="inline-flex items-center gap-2 rounded-full bg-white/95 px-4 py-1.5 shadow-md border border-pink-100">
-                <span className="text-sm">💝</span>
+              <div className="glass-card inline-flex items-center gap-2 rounded-full px-4 py-2 shadow-lg">
+                <span className="text-lg">&#128157;</span>
                 <p className="text-xs font-semibold text-pink-800">
-                  Detalles únicos · Hechos con amor
+                  Detalles con amor
                 </p>
               </div>
 
               {/* Título */}
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white leading-tight drop-shadow-lg">
+              <h1 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tight drop-shadow-lg">
                 {currentBanner.title}
               </h1>
 
               {/* Subtítulo */}
               {currentBanner.subtitle && (
-                <p className="text-xl md:text-2xl font-bold text-amber-300 drop-shadow-md">
+                <p className="text-xl md:text-2xl font-bold text-gradient-gold drop-shadow-md">
                   {currentBanner.subtitle}
                 </p>
               )}
 
               {/* Descripción */}
               {currentBanner.description && (
-                <p className="text-sm md:text-base text-white/90 max-w-lg drop-shadow-md">
+                <p className="text-sm md:text-base text-white/90 max-w-lg drop-shadow-md leading-relaxed">
                   {currentBanner.description}
                 </p>
               )}
 
               {/* Botón */}
               {currentBanner.buttonText && currentBanner.buttonLink && (
-                <div>
+                <div className="pt-2">
                   {currentBanner.buttonLink.startsWith("http") ? (
                     <a
                       href={currentBanner.buttonLink}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 rounded-full bg-pink-600 hover:bg-pink-700 text-white font-semibold px-6 py-3 shadow-lg transition-all text-sm"
+                      className="btn-premium inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-bold px-7 py-3.5 shadow-lg transition-all text-sm"
                     >
                       {currentBanner.buttonText}
+                      <span>&#8594;</span>
                     </a>
                   ) : (
                     <Link
                       href={currentBanner.buttonLink}
-                      className="inline-flex items-center gap-2 rounded-full bg-pink-600 hover:bg-pink-700 text-white font-semibold px-6 py-3 shadow-lg transition-all text-sm"
+                      className="btn-premium inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-bold px-7 py-3.5 shadow-lg transition-all text-sm"
                     >
                       {currentBanner.buttonText}
+                      <span>&#8594;</span>
                     </Link>
                   )}
                 </div>
@@ -213,12 +267,12 @@ export default function HeroCarousel() {
           </div>
         </div>
 
-        {/* Botones de navegación */}
+        {/* Botones de navegación premium */}
         {banners.length > 1 && (
           <>
             <button
               onClick={handlePrevious}
-              className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 hover:bg-white shadow-lg flex items-center justify-center text-slate-700 hover:text-pink-600 transition-all opacity-0 group-hover:opacity-100"
+              className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full glass-card shadow-lg flex items-center justify-center text-slate-700 hover:text-pink-600 transition-all opacity-0 group-hover:opacity-100 hover:scale-110"
               aria-label="Anterior"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -228,7 +282,7 @@ export default function HeroCarousel() {
 
             <button
               onClick={handleNext}
-              className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 hover:bg-white shadow-lg flex items-center justify-center text-slate-700 hover:text-pink-600 transition-all opacity-0 group-hover:opacity-100"
+              className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full glass-card shadow-lg flex items-center justify-center text-slate-700 hover:text-pink-600 transition-all opacity-0 group-hover:opacity-100 hover:scale-110"
               aria-label="Siguiente"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -238,18 +292,17 @@ export default function HeroCarousel() {
           </>
         )}
 
-        {/* Indicadores (dots) */}
+        {/* Indicadores premium */}
         {banners.length > 1 && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 glass-card rounded-full px-4 py-2 flex gap-2">
             {banners.map((_, index) => (
               <button
                 key={index}
                 onClick={() => setCurrentIndex(index)}
-                className={`w-2 h-2 rounded-full transition-all ${
-                  index === currentIndex
-                    ? "bg-white w-6"
-                    : "bg-white/50 hover:bg-white/75"
-                }`}
+                className={`h-2 rounded-full transition-all duration-300 ${index === currentIndex
+                    ? "bg-pink-500 w-8"
+                    : "bg-slate-300 w-2 hover:bg-pink-300"
+                  }`}
                 aria-label={`Ir al slide ${index + 1}`}
               />
             ))}
