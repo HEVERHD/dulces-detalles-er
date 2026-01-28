@@ -242,45 +242,45 @@ export default function HomePageClient() {
 
     return (
         <>
-            <div className="space-y-16 pb-20">
-                {/* BANNER FULL WIDTH CON SELECTOR DE SUCURSAL OVERLAY */}
+            <div className="space-y-8 md:space-y-16 pb-20">
+                {/* BANNER FULL WIDTH */}
                 <div className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen">
                     {/* Carousel de banners */}
                     <HeroCarousel />
+                </div>
 
-                    {/* SWITCH DE SUCURSAL - OVERLAY EN LA PARTE SUPERIOR */}
-                    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 w-full max-w-xl px-4">
-                        <div className="glass-card rounded-2xl p-3 shadow-premium animate-fade-in backdrop-blur-md bg-white/90">
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                                <div className="flex items-center gap-2 text-sm text-slate-600">
-                                    <span className="w-7 h-7 rounded-full bg-pink-100 flex items-center justify-center text-sm">
-                                        <span>&#128205;</span>
-                                    </span>
-                                    <span className="font-medium">Quiero escribir a:</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <div className="inline-flex rounded-xl bg-slate-100 p-1">
-                                        <button
-                                            type="button"
-                                            onClick={() => setDefaultBranch("outlet")}
-                                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${defaultBranch === "outlet"
-                                                ? "bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-md"
-                                                : "text-slate-600 hover:text-slate-800 hover:bg-white"
-                                                }`}
-                                        >
-                                            Outlet del Bosque
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setDefaultBranch("supercentro")}
-                                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${defaultBranch === "supercentro"
-                                                ? "bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-md"
-                                                : "text-slate-600 hover:text-slate-800 hover:bg-white"
-                                                }`}
-                                        >
-                                            Supercentro Ejecutivos
-                                        </button>
-                                    </div>
+                {/* SWITCH DE SUCURSAL - Separado del banner en mobile */}
+                <div className="max-w-xl mx-auto px-4">
+                    <div className="glass-card rounded-2xl p-3 shadow-premium animate-fade-in backdrop-blur-md bg-white/95">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                            <div className="flex items-center gap-2 text-sm text-slate-600">
+                                <span className="w-7 h-7 rounded-full bg-pink-100 flex items-center justify-center text-sm flex-shrink-0">
+                                    <span>&#128205;</span>
+                                </span>
+                                <span className="font-medium">Quiero escribir a:</span>
+                            </div>
+                            <div className="flex items-center">
+                                <div className="inline-flex rounded-xl bg-slate-100 p-1 w-full sm:w-auto">
+                                    <button
+                                        type="button"
+                                        onClick={() => setDefaultBranch("outlet")}
+                                        className={`flex-1 sm:flex-none px-3 py-2 rounded-lg text-xs font-semibold transition-all ${defaultBranch === "outlet"
+                                            ? "bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-md"
+                                            : "text-slate-600 hover:text-slate-800 hover:bg-white"
+                                            }`}
+                                    >
+                                        Outlet del Bosque
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setDefaultBranch("supercentro")}
+                                        className={`flex-1 sm:flex-none px-3 py-2 rounded-lg text-xs font-semibold transition-all ${defaultBranch === "supercentro"
+                                            ? "bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-md"
+                                            : "text-slate-600 hover:text-slate-800 hover:bg-white"
+                                            }`}
+                                    >
+                                        Supercentro Ejecutivos
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -288,7 +288,7 @@ export default function HomePageClient() {
                 </div>
 
                 {/* SALUDO DINAMICO POR HORA */}
-                <div className="max-w-6xl mx-auto">
+                <div className="max-w-6xl mx-auto px-4 md:px-0">
                     <TimeGreeting />
                 </div>
 

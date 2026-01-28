@@ -197,7 +197,7 @@ export default function HeroCarousel() {
   return (
     <section className="relative overflow-hidden shadow-premium-lg group">
       {/* Imagen de fondo con overlay premium */}
-      <div className="relative aspect-[16/7] md:aspect-[21/9] bg-slate-900">
+      <div className="relative aspect-4/3 sm:aspect-video md:aspect-21/9 bg-slate-900">
         <img
           src={currentBanner.imageUrl}
           alt={currentBanner.title}
@@ -209,11 +209,11 @@ export default function HeroCarousel() {
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
 
         {/* Contenido del banner */}
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full max-w-6xl mx-auto px-6 md:px-10">
-            <div className="max-w-xl space-y-5 animate-fade-in-up">
-              {/* Badge superior */}
-              <div className="glass-card inline-flex items-center gap-2 rounded-full px-4 py-2 shadow-lg">
+        <div className="absolute inset-0 flex items-end sm:items-center pb-16 sm:pb-0">
+          <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 md:px-10">
+            <div className="max-w-xl space-y-2 sm:space-y-4 animate-fade-in-up">
+              {/* Badge superior - oculto en mobile muy pequeño */}
+              <div className="glass-card hidden sm:inline-flex items-center gap-2 rounded-full px-4 py-2 shadow-lg">
                 <span className="text-lg">&#128157;</span>
                 <p className="text-xs font-semibold text-pink-800">
                   Detalles con amor
@@ -221,20 +221,20 @@ export default function HeroCarousel() {
               </div>
 
               {/* Título */}
-              <h1 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tight drop-shadow-lg">
+              <h1 className="font-display text-xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tight drop-shadow-lg">
                 {currentBanner.title}
               </h1>
 
               {/* Subtítulo */}
               {currentBanner.subtitle && (
-                <p className="text-xl md:text-2xl font-bold text-gradient-gold drop-shadow-md">
+                <p className="text-sm sm:text-xl md:text-2xl font-bold text-gradient-gold drop-shadow-md line-clamp-2">
                   {currentBanner.subtitle}
                 </p>
               )}
 
-              {/* Descripción */}
+              {/* Descripción - oculta en mobile muy pequeño */}
               {currentBanner.description && (
-                <p className="text-sm md:text-base text-white/90 max-w-lg drop-shadow-md leading-relaxed">
+                <p className="hidden sm:block text-sm md:text-base text-white/90 max-w-lg drop-shadow-md leading-relaxed line-clamp-2">
                   {currentBanner.description}
                 </p>
               )}

@@ -85,29 +85,29 @@ export default function TimeGreeting() {
             <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/20 rounded-full blur-2xl"></div>
             <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
 
-            <div className="relative px-6 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div className="flex items-center gap-4">
+            <div className="relative px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                     {/* Icono animado */}
-                    <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-3xl shadow-lg animate-float">
+                    <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-2xl sm:text-3xl shadow-lg animate-float flex-shrink-0">
                         <span dangerouslySetInnerHTML={{ __html: greetingData.icon }}></span>
                     </div>
 
-                    <div className="text-white">
-                        <h2 className="font-display text-xl md:text-2xl font-bold drop-shadow-md">
+                    <div className="text-white min-w-0">
+                        <h2 className="font-display text-base sm:text-xl md:text-2xl font-bold drop-shadow-md">
                             {greetingData.greeting}
                         </h2>
-                        <p className="text-sm text-white/80 drop-shadow-sm">
+                        <p className="text-xs sm:text-sm text-white/80 drop-shadow-sm truncate">
                             {greetingData.message}
                         </p>
                     </div>
                 </div>
 
                 {/* Hora actual */}
-                <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/20 self-start sm:self-auto">
-                    <svg className="w-4 h-4 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="flex items-center gap-1.5 sm:gap-2 bg-white/15 backdrop-blur-sm rounded-lg sm:rounded-xl px-2.5 sm:px-4 py-1.5 sm:py-2 border border-white/20 flex-shrink-0">
+                    <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span className="text-sm font-semibold text-white">
+                    <span className="text-xs sm:text-sm font-semibold text-white">
                         {currentTime}
                     </span>
                 </div>

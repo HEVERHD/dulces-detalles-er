@@ -2,21 +2,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-/**
- * MAPEO entre los slugs cortos del admin
- * y los slugs reales en la base de datos
- */
-const CATEGORY_DB_SLUGS: Record<string, string> = {
-    cumple: "cumpleanos",
-    aniversario: "aniversarios",
-    declaracion: "declaraciones",
-    infantil: "infantil",
-    dietetico: "dietetico",
-};
-
-function resolveDbCategorySlug(frontSlug: string): string {
-    return CATEGORY_DB_SLUGS[frontSlug] ?? frontSlug;
-}
 
 // ──────────────────────────────────────────
 // GET (lista productos o paginado)
@@ -104,10 +89,8 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
     const body = await req.json();
 
-    const dbSlug = resolveDbCategorySlug(body.categorySlug);
-
     const category = await prisma.category.findUnique({
-        where: { slug: dbSlug },
+        where: { slug: body.categorySlug },
     });
 
 
@@ -169,12 +152,9 @@ export async function PUT(req: Request) {
         );
     }
 
-    const dbSlug = resolveDbCategorySlug(body.categorySlug);
-
     const category = await prisma.category.findUnique({
-        where: { slug: dbSlug },
+        where: { slug: categorySlug },
     });
-
 
     if (!category) {
         return NextResponse.json(
@@ -235,9 +215,26 @@ export async function DELETE(req: Request) {
         );
     }
 
-    const deleted = await prisma.product.delete({
-        where: { id },
-    });
+    try {
+        // Usar transacción para eliminar primero las ventas relacionadas
+        const deleted = await prisma.$transaction(async (tx) => {
+            // Eliminar ventas asociadas
+            await tx.productSale.deleteMany({
+                where: { productId: id },
+            });
 
-    return NextResponse.json({ ok: true, deletedId: deleted.id });
+            // Eliminar el producto
+            return tx.product.delete({
+                where: { id },
+            });
+        });
+
+        return NextResponse.json({ ok: true, deletedId: deleted.id });
+    } catch (error: any) {
+        console.error("Error al eliminar producto:", error);
+        return NextResponse.json(
+            { error: error.message || "Error al eliminar producto" },
+            { status: 500 }
+        );
+    }
 }
