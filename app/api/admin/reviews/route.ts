@@ -27,6 +27,9 @@ export async function GET(req: NextRequest) {
             image: true,
           },
         },
+        images: {
+          select: { id: true, url: true },
+        },
       },
       orderBy: {
         createdAt: "desc",

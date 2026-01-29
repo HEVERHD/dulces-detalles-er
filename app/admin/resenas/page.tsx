@@ -2,12 +2,18 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 interface Product {
   id: string;
   name: string;
   slug: string;
   image: string;
+}
+
+interface ReviewImage {
+  id: string;
+  url: string;
 }
 
 interface Review {
@@ -18,6 +24,7 @@ interface Review {
   isApproved: boolean;
   createdAt: string;
   product: Product;
+  images?: ReviewImage[];
 }
 
 export default function AdminReviewsPage() {
@@ -30,6 +37,7 @@ export default function AdminReviewsPage() {
     type: "success" | "error";
     message: string;
   }>({ isOpen: false, type: "success", message: "" });
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
   useEffect(() => {
     fetchReviews();
@@ -299,6 +307,29 @@ export default function AdminReviewsPage() {
                     </div>
                   )}
 
+                  {/* Fotos adjuntas */}
+                  {review.images && review.images.length > 0 && (
+                    <div className="flex gap-2 mb-3 flex-wrap">
+                      <span className="text-xs text-slate-500 self-center mr-1">📷 Fotos:</span>
+                      {review.images.map((img) => (
+                        <button
+                          key={img.id}
+                          type="button"
+                          onClick={() => setLightboxUrl(img.url)}
+                          className="w-14 h-14 rounded-lg overflow-hidden border border-slate-200 hover:border-pink-400 hover:ring-2 hover:ring-pink-200 transition-all cursor-pointer"
+                        >
+                          <Image
+                            src={img.url}
+                            alt="Foto de reseña"
+                            width={56}
+                            height={56}
+                            className="w-full h-full object-cover"
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
                   {/* Acciones */}
                   <div className="flex items-center gap-3">
                     {!review.isApproved ? (
@@ -334,6 +365,32 @@ export default function AdminReviewsPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Lightbox */}
+      {lightboxUrl && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+          onClick={() => setLightboxUrl(null)}
+        >
+          <div className="relative max-w-3xl max-h-[90vh] w-full">
+            <button
+              type="button"
+              onClick={() => setLightboxUrl(null)}
+              className="absolute -top-10 right-0 text-white text-sm hover:underline"
+            >
+              ✕ Cerrar
+            </button>
+            <Image
+              src={lightboxUrl}
+              alt="Foto ampliada"
+              width={800}
+              height={800}
+              className="w-full h-auto max-h-[85vh] object-contain rounded-xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
         </div>
       )}
 

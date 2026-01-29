@@ -3,24 +3,70 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useState, useEffect } from "react";
 import { useFavorites } from "./FavoritesContext";
 import { useTheme } from "./ThemeContext";
 
-const WHATSAPP_MAIN = "573504737638";
+type Branch = "outlet" | "supercentro";
+const BRANCH_STORAGE_KEY = "dd-default-branch";
 
-function buildWhatsAppUrl() {
+const WHATSAPP_OUTLET = "573504737638";
+const WHATSAPP_SUPERCENTRO = "573202304977";
+
+function buildWhatsAppUrl(branch: Branch) {
+    const phone = branch === "supercentro" ? WHATSAPP_SUPERCENTRO : WHATSAPP_OUTLET;
     const text =
-        "Hola, vengo desde la web de *Dulces Detalles ER* y quiero informacion sobre sus detalles.";
-    return `https://wa.me/${WHATSAPP_MAIN}?text=${encodeURIComponent(text)}`;
+        "Hola, vengo desde la web de *Dulces Detalles ER* 💖 Quiero más información sobre sus arreglos y detalles.";
+    return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
 }
 
 export default function SiteHeader() {
     const { totalFavorites } = useFavorites();
     const { isDark, toggleTheme } = useTheme();
+    const [branch, setBranch] = useState<Branch>("outlet");
+
+    // Leer sucursal de localStorage al montar
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        const stored = window.localStorage.getItem(BRANCH_STORAGE_KEY);
+        if (stored === "outlet" || stored === "supercentro") {
+            setBranch(stored);
+        }
+
+        // Escuchar cambios desde HomePageClient u otras tabs
+        const handleStorage = (e: StorageEvent) => {
+            if (e.key === BRANCH_STORAGE_KEY && (e.newValue === "outlet" || e.newValue === "supercentro")) {
+                setBranch(e.newValue);
+            }
+        };
+
+        // Escuchar evento custom para sync dentro de la misma tab
+        const handleCustom = (e: Event) => {
+            const detail = (e as CustomEvent).detail;
+            if (detail === "outlet" || detail === "supercentro") {
+                setBranch(detail);
+            }
+        };
+
+        window.addEventListener("storage", handleStorage);
+        window.addEventListener("branch-change", handleCustom);
+        return () => {
+            window.removeEventListener("storage", handleStorage);
+            window.removeEventListener("branch-change", handleCustom);
+        };
+    }, []);
+
+    const handleBranchChange = (newBranch: Branch) => {
+        setBranch(newBranch);
+        if (typeof window !== "undefined") {
+            window.localStorage.setItem(BRANCH_STORAGE_KEY, newBranch);
+            window.dispatchEvent(new CustomEvent("branch-change", { detail: newBranch }));
+        }
+    };
 
     const handleWhatsAppClick = () => {
         if (typeof window === "undefined") return;
-        window.open(buildWhatsAppUrl(), "_blank");
+        window.open(buildWhatsAppUrl(branch), "_blank");
     };
 
     return (
@@ -49,7 +95,7 @@ export default function SiteHeader() {
                     </div>
                 </Link>
 
-                {/* Navegacion */}
+                {/* Navegacion desktop */}
                 <nav className="hidden md:flex items-center gap-1">
                     {[
                         { label: "Categorias", href: "/categorias" },
@@ -82,8 +128,38 @@ export default function SiteHeader() {
                     </Link>
                 </nav>
 
-                {/* Acciones: Toggle + WhatsApp */}
-                <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                {/* Acciones: Branch + Toggle + WhatsApp */}
+                <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+                    {/* Selector de sucursal - compacto */}
+                    <div className="inline-flex rounded-lg bg-slate-100 p-0.5">
+                        <button
+                            type="button"
+                            onClick={() => handleBranchChange("outlet")}
+                            className={`px-2 sm:px-2.5 py-1.5 rounded-md text-[10px] sm:text-[11px] font-semibold transition-all ${
+                                branch === "outlet"
+                                    ? "bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-sm"
+                                    : "text-slate-500 hover:text-slate-700"
+                            }`}
+                            title="Outlet del Bosque"
+                        >
+                            <span className="hidden sm:inline">Outlet</span>
+                            <span className="sm:hidden">OB</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => handleBranchChange("supercentro")}
+                            className={`px-2 sm:px-2.5 py-1.5 rounded-md text-[10px] sm:text-[11px] font-semibold transition-all ${
+                                branch === "supercentro"
+                                    ? "bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-sm"
+                                    : "text-slate-500 hover:text-slate-700"
+                            }`}
+                            title="Supercentro Los Ejecutivos"
+                        >
+                            <span className="hidden sm:inline">Supercentro</span>
+                            <span className="sm:hidden">SC</span>
+                        </button>
+                    </div>
+
                     {/* Toggle Dark Mode */}
                     <button
                         onClick={toggleTheme}

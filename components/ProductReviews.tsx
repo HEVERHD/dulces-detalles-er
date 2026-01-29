@@ -1,12 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
+
+interface ReviewImage {
+  id: string;
+  url: string;
+}
 
 interface Review {
   id: string;
   authorName: string;
   rating: number;
   comment: string | null;
+  images?: ReviewImage[];
   createdAt: string;
 }
 
@@ -46,6 +53,14 @@ export default function ProductReviews({
     text: string;
   } | null>(null);
 
+  // Photo upload state
+  const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Lightbox state
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+
   useEffect(() => {
     fetchReviews();
   }, [productId]);
@@ -64,6 +79,50 @@ export default function ProductReviews({
     }
   };
 
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const remaining = 3 - uploadedPhotos.length;
+    if (remaining <= 0) return;
+
+    const filesToUpload = Array.from(files).slice(0, remaining);
+    setIsUploading(true);
+
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+
+    for (const file of filesToUpload) {
+      if (file.size > 8 * 1024 * 1024) continue; // max 8MB
+      if (!file.type.startsWith("image/")) continue;
+
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("upload_preset", uploadPreset || "dulces_unsigned");
+
+        const res = await fetch(
+          `https://api.cloudinary.com/v1_1/${cloudName || "dmfcu3tnj"}/image/upload`,
+          { method: "POST", body: formData }
+        );
+        const data = await res.json();
+
+        if (data.secure_url) {
+          setUploadedPhotos((prev) => [...prev, data.secure_url]);
+        }
+      } catch (err) {
+        console.error("Error subiendo foto:", err);
+      }
+    }
+
+    setIsUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removePhoto = (index: number) => {
+    setUploadedPhotos((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -78,6 +137,7 @@ export default function ProductReviews({
           authorName: authorName.trim(),
           rating,
           comment: comment.trim(),
+          imageUrls: uploadedPhotos,
         }),
       });
 
@@ -91,6 +151,7 @@ export default function ProductReviews({
         setAuthorName("");
         setRating(5);
         setComment("");
+        setUploadedPhotos([]);
         setShowForm(false);
       } else {
         setSubmitMessage({
@@ -293,10 +354,76 @@ export default function ProductReviews({
             </p>
           </div>
 
+          {/* Subida de fotos */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Fotos del producto (opcional, máx. 3)
+            </label>
+
+            {/* Previews */}
+            {uploadedPhotos.length > 0 && (
+              <div className="flex gap-3 mb-3 flex-wrap">
+                {uploadedPhotos.map((url, i) => (
+                  <div key={i} className="relative group">
+                    <div className="w-20 h-20 rounded-lg overflow-hidden border border-slate-200">
+                      <Image
+                        src={url}
+                        alt={`Foto ${i + 1}`}
+                        width={80}
+                        height={80}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removePhoto(i)}
+                      className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {uploadedPhotos.length < 3 && (
+              <div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  multiple
+                  onChange={handlePhotoUpload}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  disabled={isUploading}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="inline-flex items-center gap-2 px-4 py-2 border-2 border-dashed border-slate-300 rounded-lg text-sm text-slate-600 hover:border-pink-400 hover:text-pink-600 transition-colors disabled:opacity-50"
+                >
+                  {isUploading ? (
+                    <>
+                      <span className="inline-block animate-spin h-4 w-4 border-2 border-pink-500 border-t-transparent rounded-full"></span>
+                      Subiendo...
+                    </>
+                  ) : (
+                    <>
+                      📷 Agregar fotos
+                    </>
+                  )}
+                </button>
+                <p className="text-xs text-slate-400 mt-1">
+                  JPG, PNG o WebP. Máximo 8MB por foto.
+                </p>
+              </div>
+            )}
+          </div>
+
           <div className="flex gap-3">
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isUploading}
               className="flex-1 bg-pink-600 hover:bg-pink-700 disabled:bg-slate-400 text-white font-semibold py-2 px-4 rounded-lg transition-all"
             >
               {isSubmitting ? "Enviando..." : "Enviar reseña"}
@@ -306,6 +433,7 @@ export default function ProductReviews({
               onClick={() => {
                 setShowForm(false);
                 setSubmitMessage(null);
+                setUploadedPhotos([]);
               }}
               className="px-4 py-2 border border-slate-300 text-slate-700 font-semibold rounded-lg hover:bg-slate-50 transition-all"
             >
@@ -348,8 +476,56 @@ export default function ProductReviews({
                   {review.comment}
                 </p>
               )}
+
+              {/* Fotos de la reseña */}
+              {review.images && review.images.length > 0 && (
+                <div className="flex gap-2 mt-3 flex-wrap">
+                  {review.images.map((img) => (
+                    <button
+                      key={img.id}
+                      type="button"
+                      onClick={() => setLightboxUrl(img.url)}
+                      className="w-16 h-16 rounded-lg overflow-hidden border border-slate-200 hover:border-pink-400 transition-colors cursor-pointer"
+                    >
+                      <Image
+                        src={img.url}
+                        alt="Foto de reseña"
+                        width={64}
+                        height={64}
+                        className="w-full h-full object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Lightbox */}
+      {lightboxUrl && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+          onClick={() => setLightboxUrl(null)}
+        >
+          <div className="relative max-w-3xl max-h-[90vh] w-full">
+            <button
+              type="button"
+              onClick={() => setLightboxUrl(null)}
+              className="absolute -top-10 right-0 text-white text-sm hover:underline"
+            >
+              ✕ Cerrar
+            </button>
+            <Image
+              src={lightboxUrl}
+              alt="Foto ampliada"
+              width={800}
+              height={800}
+              className="w-full h-auto max-h-[85vh] object-contain rounded-xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
         </div>
       )}
     </div>

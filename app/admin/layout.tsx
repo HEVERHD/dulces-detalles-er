@@ -158,6 +158,19 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                         🖼️ Banners del Home
                     </Link>
 
+                    <Link
+                        href="/admin/countdowns"
+                        onClick={closeSidebar}
+                        className={`flex items-center gap-2 px-2 py-1.5 rounded-lg
+                            ${isActive("/admin/countdowns")
+                                ? "text-pink-600 bg-pink-50 font-semibold"
+                                : "text-slate-600 hover:bg-slate-100"
+                            }
+                        `}
+                    >
+                        ⏳ Cuenta Regresiva
+                    </Link>
+
                     <button
                         disabled
                         className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-slate-500 hover:bg-slate-100 opacity-60 cursor-not-allowed"
