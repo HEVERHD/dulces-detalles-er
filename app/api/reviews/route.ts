@@ -29,6 +29,9 @@ export async function GET(req: NextRequest) {
         rating: true,
         comment: true,
         createdAt: true,
+        images: {
+          select: { id: true, url: true },
+        },
       },
     });
 
@@ -61,7 +64,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { productId, authorName, rating, comment } = body;
+    const { productId, authorName, rating, comment, imageUrls } = body;
 
     // Validaciones
     if (!productId || !authorName || !rating) {
@@ -98,14 +101,24 @@ export async function POST(req: NextRequest) {
     }
 
     // Crear reseña (pendiente de aprobación por defecto)
+    const urls: string[] = Array.isArray(imageUrls)
+      ? imageUrls.filter((u: unknown) => typeof u === "string" && u.trim()).slice(0, 3)
+      : [];
+
     const review = await prisma.review.create({
       data: {
         productId,
         authorName: authorName.trim(),
         rating: parseInt(rating),
         comment: comment ? comment.trim() : null,
-        isApproved: false, // Por defecto no aprobada
+        isApproved: false,
+        ...(urls.length > 0 && {
+          images: {
+            create: urls.map((url: string) => ({ url })),
+          },
+        }),
       },
+      include: { images: true },
     });
 
     return NextResponse.json(

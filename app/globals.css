@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+/* Ocultar scrollbar en chips horizontales */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* ===== COLORES DE MARCA - DULCES DETALLES ER ===== */
 /* Extraídos del logo oficial */
 :root {

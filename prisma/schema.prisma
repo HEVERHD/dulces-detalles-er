@@ -83,11 +83,24 @@ model Review {
   comment    String?
   isApproved Boolean  @default(false) // moderación
 
+  images     ReviewImage[]
+
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
   @@index([productId])
   @@index([isApproved])
+}
+
+// 🆕 Fotos de clientes en reseñas
+model ReviewImage {
+  id        String   @id @default(cuid())
+  reviewId  String
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  url       String
+  createdAt DateTime @default(now())
+
+  @@index([reviewId])
 }
 
 // 🆕 Galería de imágenes adicionales por producto
@@ -135,6 +148,26 @@ model EmailSubscriber {
   updatedAt DateTime @updatedAt
 
   @@index([email])
+}
+
+// 🆕 Cuenta regresiva para fechas especiales
+model Countdown {
+  id          String   @id @default(cuid())
+  title       String
+  subtitle    String?
+  targetDate  DateTime
+  bgColor     String   @default("from-pink-500 to-rose-500")
+  emoji       String   @default("💝")
+  buttonText  String?
+  buttonLink  String?
+  isActive    Boolean  @default(true)
+  order       Int      @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([targetDate])
 }
 
 // 🆕 Banners del carousel principal
