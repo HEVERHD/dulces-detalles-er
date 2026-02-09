@@ -7,6 +7,7 @@ import { LoaderProvider } from "@/components/providers/LoaderProvider";
 import { CartProvider } from "@/components/CartContext";
 import { FavoritesProvider } from "@/components/FavoritesContext";
 import { ThemeProvider } from "@/components/ThemeContext";
+import { GoogleMapsProvider } from "@/components/maps/GoogleMapsProvider";
 import RootClientShell from "@/components/RootClientShell";
 
 // Fuentes premium
@@ -44,13 +45,15 @@ export default function RootLayout({
       <body className="bg-gradient-to-br from-rose-50 via-pink-50 to-fuchsia-50 min-h-screen antialiased font-sans">
         {/* Providers globales */}
         <ThemeProvider>
-          <LoaderProvider>
-            <CartProvider>
-              <FavoritesProvider>
-                <RootClientShell>{children}</RootClientShell>
-              </FavoritesProvider>
-            </CartProvider>
-          </LoaderProvider>
+          <GoogleMapsProvider>
+            <LoaderProvider>
+              <CartProvider>
+                <FavoritesProvider>
+                  <RootClientShell>{children}</RootClientShell>
+                </FavoritesProvider>
+              </CartProvider>
+            </LoaderProvider>
+          </GoogleMapsProvider>
         </ThemeProvider>
       </body>
     </html>

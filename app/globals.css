@@ -988,3 +988,59 @@ body {
 .animate-bounce-soft {
   animation: bounceSoft 1s ease-in-out infinite;
 }
+
+/* ===== GOOGLE PLACES AUTOCOMPLETE ===== */
+.pac-container {
+  border-radius: 1rem;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  margin-top: 4px;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+.dark .pac-container {
+  background-color: var(--bg-card-solid);
+  border-color: var(--border-color);
+}
+
+.pac-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  border-color: var(--border-subtle);
+}
+
+.dark .pac-item {
+  color: var(--text-primary);
+  border-color: var(--border-subtle);
+}
+
+.pac-item:hover {
+  background-color: #fdf2f8;
+}
+
+.dark .pac-item:hover {
+  background-color: var(--bg-card-hover);
+}
+
+.pac-item-selected {
+  background-color: #fce7f3;
+}
+
+.dark .pac-item-selected {
+  background-color: var(--bg-card-hover);
+}
+
+.pac-icon {
+  display: none;
+}
+
+.pac-matched {
+  color: var(--brand-pink);
+  font-weight: 600;
+}
+
+.dark .pac-item-query {
+  color: var(--text-primary);
+}

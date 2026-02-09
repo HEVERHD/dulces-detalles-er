@@ -3,6 +3,7 @@
 
 import { useCart } from "@/components/CartContext";
 import CouponInput from "@/components/CouponInput";
+import AddressAutocomplete from "@/components/maps/AddressAutocomplete";
 import { useEffect, useState } from "react";
 
 
@@ -38,6 +39,7 @@ export default function CartPage() {
 
     const [branch, setBranch] = useState<Branch>("outlet");
     const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
+    const [deliveryAddress, setDeliveryAddress] = useState("");
 
     // Calcular total final con descuento
     const finalTotal = appliedCoupon
@@ -87,7 +89,7 @@ ${lines.join("\n")}
 
 Subtotal: *${formatPrice(totalAmount)}*${discountInfo}
 Total aproximado: *${formatPrice(finalTotal)}*
-Sucursal: *${getBranchLabel(branch)}*
+Sucursal: *${getBranchLabel(branch)}*${deliveryAddress ? `\nDireccion de entrega: *${deliveryAddress}*` : ""}
 
 ¿Me ayudan a confirmar disponibilidad y formas de pago?`;
 
@@ -201,6 +203,20 @@ Sucursal: *${getBranchLabel(branch)}*
                     onCouponRemoved={() => setAppliedCoupon(null)}
                     appliedCoupon={appliedCoupon}
                 />
+            </div>
+
+            {/* Dirección de entrega */}
+            <div className="mt-4">
+                <label className="text-sm font-semibold text-slate-700 mb-2 block">
+                    Direccion de entrega (opcional)
+                </label>
+                <AddressAutocomplete
+                    value={deliveryAddress}
+                    onChange={setDeliveryAddress}
+                />
+                <p className="text-[10px] text-slate-400 mt-1">
+                    Escribe tu direccion para incluirla en el pedido por WhatsApp
+                </p>
             </div>
 
             <div className="mt-2 rounded-2xl border border-pink-100 bg-pink-50/70 p-4 space-y-2">
