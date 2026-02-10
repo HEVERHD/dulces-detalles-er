@@ -3,9 +3,12 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { lazy, Suspense } from "react";
 import type { Product } from "@/lib/products";
 import ProductReviews from "@/components/ProductReviews";
 import ProductImageGallery from "@/components/ProductImageGallery";
+
+const ARProductViewer = lazy(() => import("@/components/ar/ARProductViewer"));
 
 // Números en formato internacional para WhatsApp (con 57 incluido)
 const WHATSAPP_OUTLET_BOSQUE = "573504737628";
@@ -49,6 +52,8 @@ export default function ProductPage() {
     const [error, setError] = useState<string | null>(null);
 
     const [defaultBranch, setDefaultBranch] = useState<Branch>("outlet");
+    const [isAROpen, setIsAROpen] = useState(false);
+    const [supportsCamera, setSupportsCamera] = useState(false);
 
     // 🔁 botón normal de pedir (cuando hay stock)
     const handleWhatsAppClick = () => {
@@ -77,13 +82,14 @@ export default function ProductPage() {
         );
     };
 
-    // Leer sucursal guardada
+    // Leer sucursal guardada + check soporte camara
     useEffect(() => {
         if (typeof window === "undefined") return;
         const stored = window.localStorage.getItem(BRANCH_STORAGE_KEY);
         if (stored === "outlet" || stored === "supercentro") {
             setDefaultBranch(stored);
         }
+        setSupportsCamera(!!navigator.mediaDevices?.getUserMedia);
     }, []);
 
     useEffect(() => {
@@ -282,6 +288,33 @@ export default function ProductPage() {
                     </div>
                 </div>
             </section>
+
+            {/* Botón AR */}
+            {supportsCamera && (
+                <div className="px-4">
+                    <button
+                        onClick={() => setIsAROpen(true)}
+                        className="w-full flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-pink-300 bg-pink-50/50 hover:bg-pink-100/70 text-pink-600 font-semibold py-3 text-sm transition-all"
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        Ver en mi espacio
+                    </button>
+                </div>
+            )}
+
+            {/* AR Viewer Modal */}
+            {isAROpen && (
+                <Suspense fallback={null}>
+                    <ARProductViewer
+                        productImage={product.image}
+                        productName={product.name}
+                        onClose={() => setIsAROpen(false)}
+                    />
+                </Suspense>
+            )}
 
             {/* DESCRIPCIÓN / DETALLES */}
             <section className="px-4 space-y-4">
