@@ -171,15 +171,18 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                         ⏳ Cuenta Regresiva
                     </Link>
 
-                    <button
-                        disabled
-                        className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-slate-500 hover:bg-slate-100 opacity-60 cursor-not-allowed"
+                    <Link
+                        href="/admin/pedidos"
+                        onClick={closeSidebar}
+                        className={`flex items-center gap-2 px-2 py-1.5 rounded-lg
+                            ${isActive("/admin/pedidos")
+                                ? "text-pink-600 bg-pink-50 font-semibold"
+                                : "text-slate-600 hover:bg-slate-100"
+                            }
+                        `}
                     >
                         🧾 Pedidos
-                        <span className="ml-auto text-[10px] text-slate-400">
-                            Próximamente
-                        </span>
-                    </button>
+                    </Link>
                 </nav>
 
                 {/* Footer / usuario */}
