@@ -3,6 +3,7 @@
 
 import { useCart } from "@/components/CartContext";
 import CouponInput from "@/components/CouponInput";
+import AddressAutocomplete from "@/components/maps/AddressAutocomplete";
 import { useEffect, useState } from "react";
 
 
@@ -38,6 +39,15 @@ export default function CartPage() {
 
     const [branch, setBranch] = useState<Branch>("outlet");
     const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
+    const [deliveryAddress, setDeliveryAddress] = useState("");
+
+    // Modal pre-checkout
+    const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
+    const [customerName, setCustomerName] = useState("");
+    const [customerPhone, setCustomerPhone] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [orderResult, setOrderResult] = useState<{ orderNumber: string } | null>(null);
+    const [checkoutError, setCheckoutError] = useState("");
 
     // Calcular total final con descuento
     const finalTotal = appliedCoupon
@@ -59,27 +69,66 @@ export default function CartPage() {
             maximumFractionDigits: 0,
         });
 
-    const handleSendWhatsAppOrder = async () => {
-        if (typeof window === "undefined" || items.length === 0) return;
+    const handleCheckoutSubmit = async () => {
+        if (!customerName.trim()) {
+            setCheckoutError("Por favor ingresa tu nombre");
+            return;
+        }
+        if (!customerPhone.trim() || customerPhone.trim().length < 7) {
+            setCheckoutError("Por favor ingresa un telefono valido");
+            return;
+        }
 
-        const phone =
-            branch === "supercentro"
-                ? WHATSAPP_SUPERCENTRO
-                : WHATSAPP_OUTLET_BOSQUE;
+        setCheckoutError("");
+        setIsSubmitting(true);
 
-        const lines = items.map(
-            (it) =>
-                `- ${it.quantity} x ${it.name} (${formatPrice(
-                    it.price
-                )} c/u) = ${formatPrice(it.price * it.quantity)}`
-        );
+        try {
+            const res = await fetch("/api/orders", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    customerName: customerName.trim(),
+                    customerPhone: customerPhone.trim(),
+                    deliveryAddress: deliveryAddress || null,
+                    selectedBranch: branch,
+                    items: items.map((it) => ({
+                        productId: it.id,
+                        name: it.name,
+                        image: it.image,
+                        price: it.price,
+                        quantity: it.quantity,
+                    })),
+                    subtotal: totalAmount,
+                    couponId: appliedCoupon?.id || null,
+                    couponCode: appliedCoupon?.code || null,
+                    discountAmount: appliedCoupon?.discountAmount || 0,
+                    total: finalTotal,
+                }),
+            });
 
-        // Construir info de descuento si hay cupón aplicado
-        const discountInfo = appliedCoupon
-            ? `\n💚 Cupón aplicado: *${appliedCoupon.code}*\nDescuento: *${formatPrice(appliedCoupon.discountAmount)}*\n`
-            : "";
+            const data = await res.json();
 
-        const text = `Hola, vengo desde la web de *Dulces Detalles ER* 💖
+            if (!data.ok) {
+                setCheckoutError(data.message || "Error al crear el pedido");
+                setIsSubmitting(false);
+                return;
+            }
+
+            const orderNumber = data.orderNumber;
+            setOrderResult({ orderNumber });
+
+            // Abrir WhatsApp con el numero de pedido
+            const phone = branch === "supercentro" ? WHATSAPP_SUPERCENTRO : WHATSAPP_OUTLET_BOSQUE;
+            const lines = items.map(
+                (it) => `- ${it.quantity} x ${it.name} (${formatPrice(it.price)} c/u) = ${formatPrice(it.price * it.quantity)}`
+            );
+            const discountInfo = appliedCoupon
+                ? `\nCupon aplicado: *${appliedCoupon.code}*\nDescuento: *${formatPrice(appliedCoupon.discountAmount)}*\n`
+                : "";
+
+            const text = `Hola, vengo desde la web de *Dulces Detalles ER*
+
+Pedido: *${orderNumber}*
 
 Quiero hacer este pedido:
 
@@ -87,34 +136,60 @@ ${lines.join("\n")}
 
 Subtotal: *${formatPrice(totalAmount)}*${discountInfo}
 Total aproximado: *${formatPrice(finalTotal)}*
-Sucursal: *${getBranchLabel(branch)}*
+Sucursal: *${getBranchLabel(branch)}*${deliveryAddress ? `\nDireccion de entrega: *${deliveryAddress}*` : ""}
 
-¿Me ayudan a confirmar disponibilidad y formas de pago?`;
+Seguimiento: dulcesdetallescartagenaer.com/pedido/${orderNumber}`;
 
-        // Si hay un cupón aplicado, incrementar su contador de uso
-        if (appliedCoupon) {
-            try {
-                await fetch("/api/coupons/use", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ couponId: appliedCoupon.id }),
-                });
-            } catch (error) {
-                console.error("Error al registrar uso del cupón:", error);
-                // Continuar con el pedido aunque falle el registro
-            }
+            const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+            window.open(url, "_blank");
+
+            clearCart();
+        } catch {
+            setCheckoutError("Error de conexion. Intenta de nuevo.");
+        } finally {
+            setIsSubmitting(false);
         }
-
-        const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
-        window.open(url, "_blank");
     };
+
+    // Si el pedido fue exitoso, mostrar confirmacion
+    if (orderResult) {
+        return (
+            <div className="min-h-[60vh] flex flex-col items-center justify-center gap-5 px-4 text-center">
+                <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center text-3xl">
+                    &#10004;
+                </div>
+                <h2 className="text-xl font-bold text-slate-900">Pedido creado exitosamente</h2>
+                <p className="text-sm text-slate-500">
+                    Tu numero de pedido es:
+                </p>
+                <span className="inline-block bg-pink-50 border border-pink-200 rounded-xl px-6 py-3 text-lg font-extrabold text-pink-700">
+                    {orderResult.orderNumber}
+                </span>
+                <p className="text-xs text-slate-400 max-w-sm">
+                    Puedes consultar el estado de tu pedido en cualquier momento con el siguiente enlace:
+                </p>
+                <a
+                    href={`/pedido/${orderResult.orderNumber}`}
+                    className="text-sm font-semibold text-pink-600 underline hover:text-pink-700"
+                >
+                    Ver seguimiento de mi pedido
+                </a>
+                <a
+                    href="/"
+                    className="mt-4 inline-flex items-center gap-2 rounded-full bg-pink-500 hover:bg-pink-600 text-white font-semibold px-6 py-2.5 text-sm shadow-md"
+                >
+                    Volver a la tienda
+                </a>
+            </div>
+        );
+    }
 
     if (items.length === 0) {
         return (
             <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3 px-4 text-center">
-                <p className="text-sm text-slate-500">Tu carrito está vacío por ahora.</p>
+                <p className="text-sm text-slate-500">Tu carrito esta vacio por ahora.</p>
                 <a href="/" className="text-xs font-semibold text-pink-600 underline">
-                    Ver detalles para agregar 💖
+                    Ver detalles para agregar
                 </a>
             </div>
         );
@@ -193,7 +268,7 @@ Sucursal: *${getBranchLabel(branch)}*
                 ))}
             </div>
 
-            {/* Cupón de descuento */}
+            {/* Cupon de descuento */}
             <div className="mt-4">
                 <CouponInput
                     cartTotal={totalAmount}
@@ -201,6 +276,20 @@ Sucursal: *${getBranchLabel(branch)}*
                     onCouponRemoved={() => setAppliedCoupon(null)}
                     appliedCoupon={appliedCoupon}
                 />
+            </div>
+
+            {/* Direccion de entrega */}
+            <div className="mt-4">
+                <label className="text-sm font-semibold text-slate-700 mb-2 block">
+                    Direccion de entrega (opcional)
+                </label>
+                <AddressAutocomplete
+                    value={deliveryAddress}
+                    onChange={setDeliveryAddress}
+                />
+                <p className="text-[10px] text-slate-400 mt-1">
+                    Escribe tu direccion para incluirla en el pedido por WhatsApp
+                </p>
             </div>
 
             <div className="mt-2 rounded-2xl border border-pink-100 bg-pink-50/70 p-4 space-y-2">
@@ -228,7 +317,7 @@ Sucursal: *${getBranchLabel(branch)}*
                 </div>
 
                 <p className="text-[11px] text-slate-500">
-                    El valor final puede variar según personalización y disponibilidad de
+                    El valor final puede variar segun personalizacion y disponibilidad de
                     productos. Te confirmamos todo por WhatsApp.
                 </p>
 
@@ -240,13 +329,82 @@ Sucursal: *${getBranchLabel(branch)}*
                         Vaciar carrito
                     </button>
                     <button
-                        onClick={handleSendWhatsAppOrder}
+                        onClick={() => setIsCheckoutModalOpen(true)}
                         className="inline-flex items-center gap-2 rounded-full bg-green-500 hover:bg-green-600 text-white font-semibold px-5 py-2 text-xs shadow-md"
                     >
-                        💬 Enviar pedido por WhatsApp
+                        Enviar pedido por WhatsApp
                     </button>
                 </div>
             </div>
+
+            {/* Modal pre-checkout */}
+            {isCheckoutModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+                    <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl animate-fade-in-up">
+                        <h2 className="text-lg font-bold text-slate-900 mb-1">
+                            Datos para tu pedido
+                        </h2>
+                        <p className="text-xs text-slate-500 mb-5">
+                            Necesitamos tu nombre y telefono para registrar el pedido y poder darte seguimiento.
+                        </p>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-sm font-semibold text-slate-700 mb-1 block">
+                                    Nombre completo *
+                                </label>
+                                <input
+                                    type="text"
+                                    value={customerName}
+                                    onChange={(e) => setCustomerName(e.target.value)}
+                                    placeholder="Tu nombre"
+                                    className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-pink-300 focus:border-pink-400 outline-none"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="text-sm font-semibold text-slate-700 mb-1 block">
+                                    Telefono / WhatsApp *
+                                </label>
+                                <input
+                                    type="tel"
+                                    value={customerPhone}
+                                    onChange={(e) => setCustomerPhone(e.target.value.replace(/[^0-9+\s-]/g, ""))}
+                                    placeholder="300 123 4567"
+                                    className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-pink-300 focus:border-pink-400 outline-none"
+                                />
+                            </div>
+
+                            {checkoutError && (
+                                <p className="text-xs text-red-500 font-semibold">{checkoutError}</p>
+                            )}
+                        </div>
+
+                        <div className="flex gap-3 mt-6">
+                            <button
+                                onClick={() => {
+                                    setIsCheckoutModalOpen(false);
+                                    setCheckoutError("");
+                                }}
+                                className="flex-1 rounded-xl border border-slate-200 text-slate-600 font-semibold py-2.5 text-sm hover:bg-slate-50"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleCheckoutSubmit}
+                                disabled={isSubmitting}
+                                className="flex-1 rounded-xl bg-green-500 hover:bg-green-600 text-white font-semibold py-2.5 text-sm shadow-md disabled:opacity-60 inline-flex items-center justify-center gap-2"
+                            >
+                                {isSubmitting ? (
+                                    <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                                ) : (
+                                    <>Confirmar y enviar</>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
